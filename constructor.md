@@ -85,8 +85,8 @@ class People {
 
 // 女性
 class Female extends People {
-    constructor({ name, age, gender }) {
-        super({ name, age, gender })
+    constructor({ name, age }) {
+        super({ name, age, gender: 'female' })
     }
 }
 
@@ -107,4 +107,41 @@ femaleCoder.codeing()
 - 对于需要继承和封装的场景，抽象化出来类，更易于拓展，这个时候就需要`new`和`this`来构造一类对象。比如`People`这个类，也可以用于描述动物，或者任何包含姓名，年龄，性别的生物，便于继承。这样在js中实现了面向对象的编程范式(`OOP`)。 
 
 示例5中`Female`类中出现了`super`关键字，`super`用于调用父类的`constructor`方法。  
-### 关于`constructor`中`super`的设计：
+### 关于`constructor`中`super`的主要用途：  
+- 在`constructor`中调用父类的`constructor`方法。所以只能用于派生类，（也就是有父类的类）。
+- 在当前类的方法中调用其父类的方法   
+在看一个例子（示例6）:
+````js
+// 基类，包含名字，年轻，性别: People
+class People {
+    constructor ({ name, age, gender}) {
+        this.name = name
+        this.age = age
+        this.gender = gender
+    }
+    walk () {
+        console.log('走路...')
+    }
+}
+
+// 女性
+class Female extends People {
+    constructor({ name, age }) {
+        super({ name, age, gender: 'female' })
+    }
+
+    goShopping () {
+        super.walk()
+        console.log('在商场购物...')
+    }
+
+}
+
+const female = new Female({ name: '小花', age: 18 })
+female.goShopping()
+// 输出：
+// 走路...
+// 在商场购物...
+````
+`constructor`中`super`的注意事项：  
+- 必须在使用`this`之前调用`super`
