@@ -86,12 +86,15 @@ class People {
 // 女性
 class Female extends People {
     constructor({ name, age }) {
+        // 因为是女性，这里加了性别参数：gender: female
         super({ name, age, gender: 'female' })
     }
 }
 
 // 女程序员
+// 因为是女程序员，直接继承女性，并添加codeing技能
 class FemaleCoder extends Female {
+    // 添加codeing技能
     codeing () {
         console.log(`女程序员${this.name}在编程...`)
     }
@@ -125,12 +128,14 @@ class People {
 }
 
 // 女性
+// 继承People，添加性别，添加购物goShopping方法
 class Female extends People {
     constructor({ name, age }) {
         super({ name, age, gender: 'female' })
     }
 
     goShopping () {
+        // goShopping需要走路，可以直接调用基类People中的walk方法
         super.walk()
         console.log('在商场购物...')
     }
