@@ -20,3 +20,8 @@ fiber架构只是将之前执行更新的过程变成了可中断的执行过程
 fiber之前的更新过程，react将需要更新的任务放入一个队列，对队列进行按序批量更新，这个过程持续占用主线程  
 fiber引入之后，react将需要更新的任务，设计成具有优先级对fiber数据结构，将更新队列设计成链表结构(单向）。利用浏览器关键帧的空闲时间去更新fiber任务。更新过程可中断。这种情况下，间接提升了性能。（实际上并没有实质的改变，相当于把任务切碎，后台悄悄运行去了。优化执行方式 + 合理利用浏览器资源，间接提升了react应用的性能）
     
+- 关于requestIdleCallback API的一些参考链接：  
+    - 概念和用法：https://developer.mozilla.org/zh-CN/docs/Web/API/Background_Tasks_API
+- 关于 requestAnimationFrame API的一些参考：  
+    - 链接：https://developer.mozilla.org/zh-CN/docs/Web/API/window/requestAnimationFrame  
+    文中有许多参考链接
