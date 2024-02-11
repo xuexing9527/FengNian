@@ -27,7 +27,6 @@ fiber引入之后，react将需要更新的任务，设计成具有优先级对f
     - fiber reconciler
         - 不占用主线程
         - 可中断
-
     
 - 关于requestIdleCallback API的一些参考链接：  
     - 概念和用法：https://developer.mozilla.org/zh-CN/docs/Web/API/Background_Tasks_API
