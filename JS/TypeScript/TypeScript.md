@@ -4,7 +4,7 @@
 - 问题二：类型系统添加的好处是什么？代价是什么？
 
 ## 问题一：TypeScript的核心是什么？
-    提供了JS所有的功能，并添加了一层TypeScript类型系统[^1]。
+    [提供了JS所有的功能，并添加了一层TypeScript类型系统] [1]
 ## 问题二：类型系统添加的好处及代价
 - 类型系统   
 类型系统是与编程语言相关的一个概念。在计算机世界，数据结构和算法是永恒的话题。我们需要借助编程语言去操作数据结构或实现算法。而类型系统，是编程语言的重要组成部分。
@@ -20,4 +20,4 @@
         类型系统不是为了提高效率，而是为了避免争议，保持健壮。所谓的提高效率，更多是通过避免低级错误，间接体现的。
 
   
-[^1]: 出自TS官网，链接地址:https://www.typescriptlang.org/zh/docs/handbook/typescript-in-5-minutes.html
+[1]: https://www.typescriptlang.org/zh/docs/handbook/typescript-in-5-minutes.html
