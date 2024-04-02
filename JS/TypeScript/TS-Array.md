@@ -22,21 +22,19 @@ interface PersonInterface {
     age: number
 }
 
-// ** type 定义 类型 别名，注意 type 定义中有 “=” 号，type Xx = ...，type 定义更灵活，强调别名
+// ** type 定义 类型 别名，注意 type 定义中有 “=” 号，type Xx = ...，type 定义更灵活，强调别名，可以给interface 定义的类型 改个名字，如：type Xx = XxInterfaceType
 type PersonType = {
     name: string,
     age: number
 }
 
-type PersonT = PersonInterface
-interface P = PersonInterface
-
-const arr1: PersonType[] = [{ name: 'zs', age: 18, salary: 9999 }]
-const arr2: PersonInterface[] = [{ name: 'zs', age: 18, salary: 9999  }]
+const arr1: PersonType[] = [{ name: 'zs', age: 18 }]
+const arr2: PersonInterface[] = [{ name: 'zs', age: 18 }]
 const arr3: (PersonInterface & { age: number }) [] = [{ name: 'zs', age: 18 }]
 // Partial 可选
 const arr4: Partial<PersonInterface>[] = [{ name: 'xx' }, {}]
 
+console.log(arr1, arr2, arr3, arr4)
 ```
 
 
