@@ -20,7 +20,7 @@ function aboutExtends <T extends User>(u: T): T {
 传送门：
 https://www.typescriptlang.org/play?#code/JYOwLgpgTgZghgYwgAgKoGdrIN4ChnLAAmAXMiAK4C2ARtANz7lxURnphSgDmjAvrhgUQCMMAD2IZHBriKYAKIAPSCCLpkAHgAqyCCohqNGaAD4AFBTLaAlNZxMoEMBShS8BAsTIUAdMQAaJgIQFjZkAHJAAn1ASDkIpgE+ZCA
 
-这里就是错把 extends 疏忽成了等于了
+这里就是错把 extends 疏忽成了等于了  
 fix方法：
 
 ````TS
