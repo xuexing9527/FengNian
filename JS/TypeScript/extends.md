@@ -43,4 +43,4 @@ function aboutExtends <T extends User>(u: T): T {
 
 ### 解答：  
 - 原因：返回的 T 泛型 extends User，一定包含 name 和 id 字段，但还有 T 自己的字段，所以参数 u 的属性 >= User接口类型的属性。只返回 id， name 两个属性，是错误的  
-- fix：将 u 的其它属性，结构到返回值，才是继承 User 类型后 T 类型的全部属性
+- fix：将 u 的其它属性，解构到返回值，才是继承 User 类型后 T 类型的全部属性
