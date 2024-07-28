@@ -8,4 +8,5 @@
 
 ### 实现一套 UI 库需要具备那些知识技能？
 - 懂如何配合设计，对 CSS 整体架构布局进行把控
+- CSS 模块化相关。如 css-in-js, css moudle, tailwindcss 等
 - 对通用组件最佳实践有一定的涉略。比如：Modal 的几种实现形式，Select，Button，Tag，DatePicker 等
