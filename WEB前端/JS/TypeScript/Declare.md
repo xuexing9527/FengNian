@@ -9,5 +9,5 @@ declare 用来告诉 TS，某些类型是“已经”存在，并不是由我们
 - 全局声明
 
 
-参考链接：
+相关参考链接：
 https://github.com/wangdoc/typescript-tutorial/blob/main/docs/declare.md
