@@ -34,7 +34,9 @@
 
 ### 实现堆的几个方法
 - push
+    - shiftUp 上浮
 - pop
+    - shiftDown 下沉
 - peek
 
 
