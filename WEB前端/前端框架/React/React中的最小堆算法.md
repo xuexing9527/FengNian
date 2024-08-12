@@ -35,10 +35,10 @@
 ### 实现堆的几个方法
 - push
     - shiftUp 上浮
-- pop
     - shiftDown 下沉
+- pop
+    - **移除**并返回最后一个元素
 - peek
-
-
+    - 获取第一个元素，但**不移除**
 
 相关代码：https://github.com/facebook/react/blob/main/packages/scheduler/src/SchedulerMinHeap.js

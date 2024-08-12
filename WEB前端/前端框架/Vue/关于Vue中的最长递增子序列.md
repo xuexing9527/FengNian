@@ -3,19 +3,14 @@
 列表的优化，举例：
 ````html
 <!-- 列表1 -->
-<li>A</li>
-<li>B</li>
-<li>C</li>
-<li>D</li>
-<li>E</li>
-
+<ul>
+    <li>A</li> <li>B</li> <li>C</li> <li>D</li> <li>E</li>
+</ul>
 <!-- 到 =>  -->
 <!-- 列表2 -->
-<li>A</li>
-<li>D</li>
-<li>B</li>
-<li>F</li>
-<li>C</li>
+<ul>
+    <li>A</li> <li>D</li> <li>B</li> <li>F</li> <li>C</li>
+</ul>
 ````
 代码中从列表 1 到列表 2：
 我们列表 1 的 DOM 顺序为 A, B, C, D, E，编号对应数组为：`[0, 1, 2, 3, 4]`  
