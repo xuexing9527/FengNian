@@ -9,3 +9,20 @@
  const type User = Record<string, any>
 ```
 ## Partial
+我们只需要部分属性的时候，可以使用 Partical  
+``` typescript
+interface AllAttrObject {
+    attr1: string;
+    attr2: string;
+    // ...
+    attrN: number;
+}
+// 我们只需要 AllAttrObject 部分属性
+const type Sample = Partical<AllAttrObject>
+
+// 或者
+const obj: Partical<AllAttrObject> = { attr1: '只取 AllAttrObject 一个属性' }
+
+// 原理
+type Partical<T> = { [K in keyof T]?: T[K] | undefined; }
+```
