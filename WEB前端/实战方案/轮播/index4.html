@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seamless Vertical Text Carousel</title>
+  <style>
+    .text-carousel {
+      height: 50px;
+      /* 仅显示一条文案 */
+      overflow: hidden;
+      position: relative;
+    }
+
+    .carousel-items {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 0;
+      transform: translateY(0);
+      transition: transform 0.5s ease;
+    }
+
+    .carousel-items p {
+      height: 50px;
+      line-height: 50px;
+      margin: 0;
+      text-align: center;
+      background-color: #f1f1f1;
+      border-bottom: 1px solid #ccc;
+    }
+  </style>
+</head>
+
+<body></body>
+<div> clone 消除最后一个动画的 抖动 </div>
+<div class="text-carousel">
+  <div class="carousel-items" id="carousel-items">
+    <p>公告1：欢迎来到我们的官网！</p>
+    <p>公告2：今天的活动优惠多多！</p>
+    <p>公告3：关注我们，获取更多信息！</p>
+    <p>公告4：加入我们获取更多福利！</p>
+  </div>
+</div>
+
+<script>
+  const carousel = document.getElementById('carousel-items');
+  const items = document.querySelectorAll('.carousel-items p');
+  const itemHeight = 50; // 每条文案的高度
+  const delay = 3000; // 滚动间隔
+  let index = 0;
+  let startTime = null;
+
+  // 通过克隆第一项文案来处理无缝滚动
+  const firstClone = items[0].cloneNode(true);
+  carousel.appendChild(firstClone); // 将克隆的第一项放到最后，实现无缝滚动
+
+  function scrollText(timestamp) {
+    if (!startTime) startTime = timestamp;
+
+    const elapsed = timestamp - startTime;
+
+    if (elapsed > delay) {
+      index++;
+      carousel.style.transition = 'transform 0.5s ease'; // 恢复过渡动画
+      carousel.style.transform = `translateY(-${index * itemHeight}px)`;
+
+      // 当到达克隆的第一项时，瞬间回到原始第一项的位置
+      if (index === items.length) {
+        setTimeout(() => {
+          carousel.style.transition = 'none'; // 关闭过渡动画
+          carousel.style.transform = 'translateY(0)'; // 回到原始第一项
+          index = 0; // 重置索引
+        }, 500); // 在动画结束后重置
+      }
+
+      startTime = timestamp; // 重置时间
+    }
+
+    // 使用 requestAnimationFrame 来优化滚动动画
+    requestAnimationFrame(scrollText);
+  }
+
+  // 启动动画
+  requestAnimationFrame(scrollText);
+</script>
+</body>
+
+</html>

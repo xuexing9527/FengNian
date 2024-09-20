@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .text-carousel {
+            height: 30px;
+            /* 容器高度，只显示一条文案 */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .carousel-items {
+            position: absolute;
+            top: 0;
+            transition: top 0.5s ease;
+            /* 添加平滑过渡效果 */
+        }
+    </style>
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="text-carousel">
+        <div class="carousel-items">
+            <p>公告1：欢迎来到我们的官网！</p>
+            <p>公告2：今天的活动优惠多多！</p>
+            <p>公告3：关注我们，获取更多信息！</p>
+        </div>
+    </div>
+</body>
+
+<script>
+    const carousel = document.querySelector('.carousel-items');
+    const items = carousel.children;
+    let index = 0;
+
+    function scrollText() {
+        index++;
+        if (index === items.length) {
+            // 迅速重置到第一条，避免视觉延迟
+            carousel.style.transition = 'none'; // 关闭过渡效果
+            carousel.style.top = '0px';
+            index = 1; // 马上从第二条重新开始滚动
+            setTimeout(() => {
+                // 短暂延迟后恢复过渡，继续正常滚动
+                carousel.style.transition = 'top 0.5s ease';
+                carousel.style.top = `-${index * 30}px`;
+            }, 20);
+        } else {
+            carousel.style.top = `-${index * 50}px`;
+        }
+    }
+
+    // 每3秒滚动一次
+    setInterval(scrollText, 3000);
+</script>
+
+</html>

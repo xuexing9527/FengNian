@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vertical Text Carousel</title>
+  <style>
+    /* 样式 */
+    .text-carousel {
+      height: 50px; /* 限制容器高度为一条文案 */
+      overflow: hidden;
+      position: relative;
+    }
+
+    .carousel-items {
+      position: absolute;
+      top: 0;
+      transform: translateY(0);
+      transition: transform 0.5s ease; /* 平滑过渡 */
+      will-change: transform;
+    }
+
+    .carousel-items p {
+      height: 50px; /* 每个文案的高度 */
+      line-height: 50px; /* 垂直居中显示 */
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background-color: #f1f1f1;
+      border-bottom: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+    <div>
+        setInterval 累计偏移优化
+    </div>
+  <div class="text-carousel">
+    <div class="carousel-items">
+      <p>公告1：欢迎来到我们的官网！</p>
+      <p>公告2：今天的活动优惠多多！</p>
+      <p>公告3：关注我们，获取更多信息！</p>
+      <p>公告4：加入我们获取更多福利！</p>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript 实现
+    const carousel = document.querySelector('.carousel-items');
+    const items = document.querySelectorAll('.carousel-items p'); // 修正 items 获取方式
+    const itemHeight = 50; // 每条文案的高度
+    const delay = 3000; // 滚动间隔
+    let index = 0;
+    let startTime = null;
+
+    function scrollText(timestamp) {
+      if (!startTime) startTime = timestamp;
+
+      const elapsed = timestamp - startTime;
+
+      if (elapsed > delay) {
+        index++;
+        if (index === items.length) {
+          // 重置到第一条，无缝回到顶部
+          carousel.style.transition = 'none'; // 暂时关闭过渡效果
+          carousel.style.transform = 'translateY(0)';
+          index = 1; // 马上从第二条重新开始滚动
+          setTimeout(() => {
+            carousel.style.transition = 'transform 0.5s ease'; // 恢复过渡效果
+            carousel.style.transform = `translateY(-${itemHeight}px)`;
+          }, 20);
+        } else {
+          carousel.style.transform = `translateY(-${index * itemHeight}px)`;
+        }
+
+        startTime = timestamp; // 重置开始时间
+      }
+
+      // 使用 requestAnimationFrame 继续调用
+      requestAnimationFrame(scrollText);
+    }
+
+    // 启动无限滚动动画
+    requestAnimationFrame(scrollText);
+  </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .text-carousel {
+            height: 30px;
+            /* 容器高度，只显示一条文案 */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .carousel-items {
+            transform: translateY(0);
+            transition: transform 0.5s ease;
+            /* 平滑过渡 */
+        }
+    </style>
+    <title>Document</title>
+</head>
+
+<body>
+    <div>transfom 优化</div>
+    <div class="text-carousel">
+        <div class="carousel-items">
+            <p>公告1：欢迎来到我们的官网！</p>
+            <p>公告2：今天的活动优惠多多！</p>
+            <p>公告3：关注我们，获取更多信息！</p>
+        </div>
+    </div>
+</body>
+
+<script>
+    const carousel = document.querySelector('.carousel-items');
+    const items = carousel.children;
+    const itemHeight = 50; // 每个文案的高度
+    let index = 0;
+
+    function scrollText() {
+        index++;
+        if (index === items.length) {
+            // 重置回第一条
+            carousel.style.transition = 'none'; // 关闭过渡
+            carousel.style.transform = 'translateY(0)';
+            index = 1;
+            setTimeout(() => {
+                // 短暂延迟后恢复过渡，继续滚动
+                carousel.style.transition = 'transform 0.5s ease';
+                carousel.style.transform = `translateY(-${itemHeight}px)`;
+            }, 20);
+        } else {
+            carousel.style.transform = `translateY(-${index * itemHeight}px)`;
+        }
+    }
+
+    // 定时器每3秒滚动一次
+    setInterval(scrollText, 3000);
+
+
+</script>
+
+</html>
