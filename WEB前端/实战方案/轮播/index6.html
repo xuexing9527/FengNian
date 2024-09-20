@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seamless Vertical Text Carousel</title>
   <style>
     .text-carousel {
-      height: 50px;
-      /* 仅显示一条文案 */
+      height: 50px; /* 仅显示一条文案 */
       overflow: hidden;
       position: relative;
     }
@@ -32,69 +30,59 @@
     }
   </style>
 </head>
-
 <body>
-  <div>
-    clone 消除最后一个动画的 抖动3, 增加 200ms 延迟来调整
-  </div>
   <div class="text-carousel">
     <div class="carousel-items" id="carousel-items">
       <p>公告1：欢迎来到我们的官网！</p>
       <p>公告2：今天的活动优惠多多！</p>
-      <p>公告3：关注我们，获取更多信息！</p>
-      <!-- <p>公告4：加入我们获取更多福利！</p> -->
+      <!-- <p>公告3：关注我们，获取更多信息！</p>
+      <p>公告4：加入我们获取更多福利！</p> -->
     </div>
   </div>
-</body>
 
-<script>
-  const carousel = document.getElementById('carousel-items');
-  const items = document.querySelectorAll('.carousel-items p');
-  const itemHeight = 50; // 每条文案的高度
-  const delay = 3000; // 滚动间隔
-  let index = 0;
-  let startTime = null;
+  <script>
+    const carousel = document.getElementById('carousel-items');
+    const items = document.querySelectorAll('.carousel-items p');
+    const itemHeight = 50; // 每条文案的高度
+    const delay = 3000; // 滚动间隔
+    const resetDelay = 600; // 复位前延迟 100ms
+    let index = 0;
 
-  // 克隆第一个文案并添加到最后
-  const firstClone = items[0].cloneNode(true);
-  carousel.appendChild(firstClone);
+    // 克隆第一个文案并添加到最后
+    const firstClone = items[0].cloneNode(true);
+    carousel.appendChild(firstClone);
 
-  // 监听动画结束事件，来实现无缝切换
-  carousel.addEventListener('transitionend', () => {
-    // 到达克隆的第一项时，增加延迟200ms后瞬间切换回原始第一项
-    if (index === items.length) {
-      setTimeout(() => {
-        carousel.style.transition = 'none'; // 禁用过渡动画
-        carousel.style.transform = 'translateY(0)'; // 瞬间跳转到第一项
-        index = 0;
-        // 下一帧重新开启动画
-        requestAnimationFrame(() => {
-          carousel.style.transition = 'transform 0.5s ease'; // 恢复过渡动画
-        });
-      }, 200); // 延迟50ms切换
-    }
-  });
-
-  function scrollText(timestamp) {
-    if (!startTime) startTime = timestamp;
-
-    const elapsed = timestamp - startTime;
-
-    if (elapsed > delay) {
+    function scrollText() {
       index++;
-      carousel.style.transition = 'transform 0.5s ease'; // 过渡动画
-      carousel.style.transform = `translateY(-${index * itemHeight}px)`;
+      carousel.style.transition = 'transform 0.5s ease'; // 启动动画
+      carousel.style.transform = `translateY(-${index * itemHeight}px)`; // 滚动到下一项
 
-      startTime = timestamp; // 重置时间
+      // 如果到达克隆的第一项
+      if (index === items.length) {
+        setTimeout(() => {
+          // 等待 100ms 让动画完成，然后复位位置到真正的第一项
+          carousel.style.transition = 'none'; // 禁用过渡动画
+          carousel.style.transform = 'translateY(0)'; // 复位到第一项
+          index = 0;
+
+          // 下一帧恢复过渡动画
+          setTimeout(() => {
+            carousel.style.transition = 'transform 0.5s ease'; // 恢复过渡动画
+            startCarousel(); // 动画完成后重新开始
+          }, delay); // 延迟以避免立即重新过渡
+        }, resetDelay);
+      } else {
+        // 在正常动画完成后开始下一次滚动
+        setTimeout(startCarousel, delay);
+      }
     }
 
-    // 使用 requestAnimationFrame 来优化滚动动画
-    requestAnimationFrame(scrollText);
-  }
+    function startCarousel() {
+      scrollText();
+    }
 
-  // 启动动画
-  requestAnimationFrame(scrollText);
-</script>
+    // 启动动画
+    setTimeout(startCarousel, delay); // 初次延迟后启动
+  </script>
 </body>
-
 </html>

@@ -39,8 +39,8 @@
   <div class="carousel-items" id="carousel-items">
     <p>公告1：欢迎来到我们的官网！</p>
     <p>公告2：今天的活动优惠多多！</p>
-    <p>公告3：关注我们，获取更多信息！</p>
-    <p>公告4：加入我们获取更多福利！</p>
+    <!-- <p>公告3：关注我们，获取更多信息！</p>
+    <p>公告4：加入我们获取更多福利！</p> -->
   </div>
 </div>
 
@@ -64,7 +64,7 @@
     if (elapsed > delay) {
       index++;
       carousel.style.transition = 'transform 0.5s ease'; // 恢复过渡动画
-      carousel.style.transform = `translateY(-${index * itemHeight}px)`;
+      carousel.style.transform = `translateY(-${index * (itemHeight+ 1)}px)`;
 
       // 当到达克隆的第一项时，瞬间回到原始第一项的位置
       if (index === items.length) {

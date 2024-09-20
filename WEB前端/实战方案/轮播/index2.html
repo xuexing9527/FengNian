@@ -6,16 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         .text-carousel {
-            height: 30px;
+            height: 50px;
             /* 容器高度，只显示一条文案 */
             overflow: hidden;
             position: relative;
         }
 
         .carousel-items {
+            position: absolute;
+            top: 0;
             transform: translateY(0);
             transition: transform 0.5s ease;
             /* 平滑过渡 */
+            will-change: transform;
+        }
+
+        .carousel-items p {
+            height: 50px;
+            /* 每个文案的高度 */
+            line-height: 50px;
+            /* 垂直居中显示 */
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f1f1f1;
+            border-bottom: 1px solid #ccc;
         }
     </style>
     <title>Document</title>
@@ -27,7 +42,7 @@
         <div class="carousel-items">
             <p>公告1：欢迎来到我们的官网！</p>
             <p>公告2：今天的活动优惠多多！</p>
-            <p>公告3：关注我们，获取更多信息！</p>
+            <!-- <p>公告3：关注我们，获取更多信息！</p> -->
         </div>
     </div>
 </body>
@@ -48,15 +63,24 @@
             setTimeout(() => {
                 // 短暂延迟后恢复过渡，继续滚动
                 carousel.style.transition = 'transform 0.5s ease';
-                carousel.style.transform = `translateY(-${itemHeight}px)`;
-            }, 20);
+                setTimeout(() => {
+                    carousel.style.transform = `translateY(-${itemHeight}px)`;
+                    setTimeout(() => {
+                        scrollText()
+                    }, 2000); // 动画完成后继续滚动
+                }, 2000)
+            });
         } else {
             carousel.style.transform = `translateY(-${index * itemHeight}px)`;
+            setTimeout(scrollText, 2000); // 动画完成后继续滚动
         }
     }
 
-    // 定时器每3秒滚动一次
-    setInterval(scrollText, 3000);
+    // // 定时器每3秒滚动一次
+    // setInterval(scrollText, 3000);
+
+    // 启动滚动
+    setTimeout(scrollText, 2000); // 初始等待3秒，展示第一条文案
 
 
 </script>
