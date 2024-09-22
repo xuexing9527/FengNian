@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS 无缝垂直滚动轮播</title>
+    <style>
+        /* 容器样式 */
+        .carousel-container {
+            width: 100%; /* 轮播的宽度 */
+            height: 50px; /* 单个文案的高度 */
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #ddd; /* 边框用于视觉测试 */
+        }
+
+        /* 轮播项样式 */
+        .carousel-items {
+            display: flex;
+            flex-direction: column;
+            animation: scrollText 12s linear infinite;
+        }
+
+        /* 文案样式 */
+        .carousel-item {
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            background-color: #f4f4f4;
+            border-bottom: 1px solid #ccc; /* 分隔文案 */
+        }
+
+        /* 关键帧动画 */
+        @keyframes scrollText {
+            0% {
+                transform: translateY(0);
+            }
+            20% {
+                transform: translateY(0);
+            }
+            25% {
+                transform: translateY(-50px); /* 每次移动一个文案的高度 */
+            }
+            45% {
+                transform: translateY(-50px);
+            }
+            50% {
+                transform: translateY(-100px);
+            }
+            70% {
+                transform: translateY(-100px);
+            }
+            75% {
+                transform: translateY(-150px);
+            }
+            95% {
+                transform: translateY(-150px);
+            }
+            100% {
+                transform: translateY(0); /* 回到第一个文案，实现无缝 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="carousel-container">
+    <div class="carousel-items">
+        <div class="carousel-item">文案 1</div>
+        <div class="carousel-item">文案 2</div>
+        <div class="carousel-item">文案 3</div>
+        <div class="carousel-item">文案 4</div>
+        <div class="carousel-item">文案 1</div> <!-- 这里重复第一个文案以实现无缝轮播 -->
+    </div>
+</div>
+
+</body>
+</html>
