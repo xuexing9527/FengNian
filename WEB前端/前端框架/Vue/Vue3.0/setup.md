@@ -1,5 +1,5 @@
 # setup 
-setup 是组合式 API 的入口，一般两种形式使用
+setup 是组件中使用组合式 API 的入口，一般两种形式使用
 - 编译时语法糖
 ``` html 
 <script setup></script>
