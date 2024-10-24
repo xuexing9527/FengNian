@@ -15,6 +15,7 @@ http1 keep-alive
 http2.0，多路复用
 http3.0
 
+## 握手时长一般为多少合理呢？
 
 ## 相近知识
 - UDP
