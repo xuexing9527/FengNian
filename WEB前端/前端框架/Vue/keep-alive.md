@@ -10,4 +10,8 @@
 - activated
 - deactivated
 
-LRU 策略
+## LRU 策略
+Last Recently used
+内存管理、数据库缓存和浏览器缓存等，保留较为活跃的对象
+实现方式：
+双向链表和哈希表
