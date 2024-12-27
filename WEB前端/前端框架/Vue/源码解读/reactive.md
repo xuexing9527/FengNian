@@ -1,16 +1,16 @@
 # reactive 
 ## 关于 reactive
 
-baseHandlers.ts: baseHandlers.ts 中定义的是 Proxy 的拦截器，即 get、set、has 等操作。这些拦截器会在访问响应式对象的属性时触发，用于执行依赖收集、值的修改等操作。
+- baseHandlers.ts: baseHandlers.ts 中定义的是 Proxy 的拦截器，即 get、set、has 等操作。这些拦截器会在访问响应式对象的属性时触发，用于执行依赖收集、值的修改等操作。
 
-get 用于拦截读取操作；
-set 用于拦截写入操作；
-has 用于判断属性是否存在。
+- get 用于拦截读取操作；
+- set 用于拦截写入操作；
+- has 用于判断属性是否存在。
 
 
-effect 和依赖收集: 在 Vue 3 中，effect 主要用于执行副作用（例如，更新视图、计算属性等）。effect 在执行时会通过 get 操作收集依赖，当数据发生变化时，effect 会重新运行。
+- effect 和依赖收集: 在 Vue 3 中，effect 主要用于执行副作用（例如，更新视图、计算属性等）。effect 在执行时会通过 get 操作收集依赖，当数据发生变化时，effect 会重新运行。
 
-依赖收集的逻辑通过 get 和 set 拦截器实现，effect 会在这些拦截器中触发。具体来说，effect 的触发主要是在 Vue 的响应式系统中通过 track 和 trigger 函数来完成的，而这些函数是由 get 和 set 方法调用的。
+- 依赖收集的逻辑通过 get 和 set 拦截器实现，effect 会在这些拦截器中触发。具体来说，effect 的触发主要是在 Vue 的响应式系统中通过 track 和 trigger 函数来完成的，而这些函数是由 get 和 set 方法调用的。
 1. track （追踪）函数：
 track 是依赖收集的核心函数，它会把当前的执行上下文（即 effect）注册到响应式对象的依赖中。在访问响应式对象的属性时（即 get），会调用 track 来收集依赖。
 
