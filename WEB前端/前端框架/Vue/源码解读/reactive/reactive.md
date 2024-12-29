@@ -8,9 +8,11 @@
 - has 用于判断属性是否存在。
 
 
-- effect 和依赖收集: 在 Vue 3 中，effect 主要用于执行副作用（例如，更新视图、计算属性等）。effect 在执行时会通过 get 操作收集依赖，当数据发生变化时，effect 会重新运行。
+- effect 和依赖收集: 管理依赖收集与触发逻辑。
+在 Vue 3 中，effect 主要用于执行副作用（例如，更新视图、计算属性等）。effect 在执行时会通过 get 操作收集依赖，当数据发生变化时，effect 会重新运行。
 
 - 依赖收集的逻辑通过 get 和 set 拦截器实现，effect 会在这些拦截器中触发。具体来说，effect 的触发主要是在 Vue 的响应式系统中通过 track 和 trigger 函数来完成的，而这些函数是由 get 和 set 方法调用的。
+
 1. track （追踪）函数：
 track 是依赖收集的核心函数，它会把当前的执行上下文（即 effect）注册到响应式对象的依赖中。在访问响应式对象的属性时（即 get），会调用 track 来收集依赖。
 
@@ -214,3 +216,6 @@ class BaseReactiveHandler implements ProxyHandler<Target> {
   }
 }
 ```
+### 关于 BaseReactiveHandler 的思考：
+- 为什么只有 get 的实现？  
+GPT回答或许是为只读 handler 设计的
