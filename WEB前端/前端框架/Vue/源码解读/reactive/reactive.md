@@ -11,6 +11,8 @@ reactive 核心是依赖收集和触发更新
 - baseHandlers.ts: baseHandlers.ts 中定义的是 Proxy 的拦截器，即 get、set、has 等操作。这些拦截器会在访问响应式对象的属性时触发，用于执行依赖收集、值的修改等操作。
 
 - get 用于拦截读取操作；
+  - 思考 get 会遇到的情况？get 的核心思想？  
+  核心思想：返回对应的值 => `obj[key]` 的时候触发 get 方法
 - set 用于拦截写入操作；
 - has 用于判断属性是否存在。
 
