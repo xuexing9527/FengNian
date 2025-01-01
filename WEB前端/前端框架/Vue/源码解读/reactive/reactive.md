@@ -1,12 +1,23 @@
 # reactive 
 ## 关于 reactive
 
-reactive 核心是依赖收集和触发更新
+### reactive 核心是依赖收集和触发更新
 - 依赖收集 effect track，三种情况： get, has, ownKeys
-
 - 触发更新 trigger，两种情况：set, deleteProperty
 
+#### 前置问题：
+1. 只读
+响应式属性值是否是只读的？处理只读逻辑。  
+响应式一般常规理解，set 触发 get 对应的依赖更新。所以要考虑 set 是否能更改对应的值。所以要考虑只读属性值
+2. 
+
+#### track（追踪）
+凡是需要追踪响应式值的地方（如 get，in，has），都需要 track （追踪）。所以 track 要记录多个依赖方法。
+#### trigger（触发）
+触发 track 方法，在 set， deleteProperty 的时候触发。
+
 **理解起来大概是 get (还有其它情况：has iterate )这个值的时候，往往要收集这个依赖。当这个值被 set 的时候，触发那些 get 过这些值的依赖函数**
+
 
 - baseHandlers.ts: baseHandlers.ts 中定义的是 Proxy 的拦截器，即 get、set、has 等操作。这些拦截器会在访问响应式对象的属性时触发，用于执行依赖收集、值的修改等操作。
 
