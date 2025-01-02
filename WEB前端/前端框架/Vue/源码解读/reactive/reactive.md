@@ -238,4 +238,4 @@ class BaseReactiveHandler implements ProxyHandler<Target> {
 ```
 ### 关于 BaseReactiveHandler 的思考：
 - 为什么只有 get 的实现？  
-GPT回答或许是为只读 handler 设计的
+因为一个对象主要是被 get 取值的，get 之外的操作并不一定常见，不必须。
