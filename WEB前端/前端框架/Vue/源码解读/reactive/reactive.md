@@ -18,7 +18,6 @@
 
 **理解起来大概是 get (还有其它情况：has iterate )这个值的时候，往往要收集这个依赖。当这个值被 set 的时候，触发那些 get 过这些值的依赖函数**
 
-
 - baseHandlers.ts: baseHandlers.ts 中定义的是 Proxy 的拦截器，即 get、set、has 等操作。这些拦截器会在访问响应式对象的属性时触发，用于执行依赖收集、值的修改等操作。
 
 - get 用于拦截读取操作；
@@ -236,6 +235,3 @@ class BaseReactiveHandler implements ProxyHandler<Target> {
   }
 }
 ```
-### 关于 BaseReactiveHandler 的思考：
-- 为什么只有 get 的实现？  
-GPT回答或许是为只读 handler 设计的
