@@ -53,6 +53,12 @@ class BaseReactiveHandler implements ProxyHandler<Target> {
     protected readonly _isShallow = false,
   ) {}
 
+  /**
+   * __x
+   * target 原始对象
+   * key 访问的属性键值，这里 key 如果是 ReactiveFlags 中的几个特殊属性，返回 boolean 值
+   * receiver 
+   */
   get(target: Target, key: string | symbol, receiver: object): any {
     if (key === ReactiveFlags.SKIP) return target[ReactiveFlags.SKIP]
 
