@@ -6,19 +6,38 @@ useLayoutEffect 会阻塞浏览器绘制
 下面这个例子可以放到控制台执行下，方便理解 useLayoutEffect 巧妙的在 DOM 更新后浏览器绘制之前执行
 ```js
 function main () {
-    const time = new Date().getTime()
+
+    /**
+     * 阻塞函数
+     */
+    function sleep (s, showLog) {
+        if (showLog) console.log(`等待${s}秒...`)
+        const time = new Date().getTime()
+        while (new Date().getTime() - time < s * 1000) { }
+    }
+
     /**
      * patch 来更新 DOM
      */
     function patch () {
         document.body.innerText = '测试 同步方法'
-        console.log('已经更新了DOM，但是浏览器还没绘制...')
+        console.log('执行 patch ...，此时更新了DOM，但是浏览器还没绘制...')
     }
+
     function useLayoutEffect(params) {
-        console.log('看这里的 body text 已经改变了: ', document.body.innerText)
-        console.log('layoutEffect... 我来阻塞 浏览器 3s。这里可以看出 useLayoutEffect 同步阻塞了浏览器运行，在浏览器渲染（绘制）画面之前运行')
-        while (new Date().getTime() - time < 3000) { }
-        console.log('layoutEffect... 继续')
+
+        console.log('执行 useLayoutEffect...') 
+        sleep(2)
+        console.log('注意看此时的 document.body.innerText 已经改变成了: ', document.body.innerText)
+        sleep(2)
+        console.log('但是页面并没有更新（绘制）!!!')
+        sleep(2)
+        const s = 5
+        console.log(`接下来阻塞浏览器 ${s}s，来个缓冲理解下整个过程...`)
+        sleep(s, true)
+        console.log(`${s}s 后 layoutEffect... 继续`)
+        sleep(2)
+        console.log(`uselayoutEffect 执行完成！`)
     }
 
     /**
@@ -28,8 +47,16 @@ function main () {
      * 
      */
     patch()
+    sleep(3)
     useLayoutEffect()
+
+    {
+        setTimeout(() => console.log('此时浏览器完成了渲染（绘制）。页面 body text 变成了 "测试 同步方法"'), 1000)
+        setTimeout(() => console.log(`这里可以看出 useLayoutEffect 同步阻塞了浏览器运行，在浏览器渲染（绘制）画面之前运行`), 3000)
+    }
 }
+
+main()
 ```
 其他：这个执行时机相当于在浏览器未绘制前，可以做一些预操作，来修正 DOM 位置等。其实这个过程相当于劫持 paint， 再来一次 reflow 的机会。
 
