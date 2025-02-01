@@ -16,9 +16,9 @@ function main () {
     }
     function useLayoutEffect(params) {
         console.log('看这里的 body text 已经改变了: ', document.body.innerText)
-        console.log('layoutEffect... 我来阻塞 浏览器 3s')
+        console.log('layoutEffect... 我来阻塞 浏览器 3s。这里可以看出 useLayoutEffect 同步阻塞了浏览器运行，在浏览器渲染（绘制）画面之前运行')
         while (new Date().getTime() - time < 3000) { }
-        console.log('layoutEffect... 继续，这里可以看出 useLayoutEffect 同步阻塞了浏览器运行，在浏览器渲染（绘制）画面之前运行')
+        console.log('layoutEffect... 继续')
     }
 
     /**
