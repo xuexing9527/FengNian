@@ -59,3 +59,13 @@ const ConnectedCartSubmit = connect(mapStateToProps, mapDispatchToProps)(CartSub
 // <ConnectedCartSubmit extraProp="Hello" />
 // 被丢弃，不会传递 `extraProp`。
 ```
+
+问题：
+cannot be used as a JSX component.
+  Its return type 'ReactNode' is not a valid JSX element.
+    Type 'undefined' is not assignable to type 'Element | null'.
+
+
+这个错误我终于从头到尾fix了。我得出的结论是，connect 无法正确推断类型，最终可能返回 React.Node 类型。既然推断不成功。那就给 最终返回的 connect as 一个 React.FC。  
+但问题是 React.FC<Props>，里面的Props 类型，只能是 父组件传递来的 props，而不必要写 所有的 props（比如不必包含store里面的类型），这样既保证父组件传递私有 props 的时候的正确性，又不至于类型全写增加复杂度。
+connect 这样 推断不出类型，是 TS的锅，还是  connect的锅呢？？（待查...2025年2月10日）
