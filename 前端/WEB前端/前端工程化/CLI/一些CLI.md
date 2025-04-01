@@ -12,4 +12,12 @@ CRA
 ## creat-vue
 CV
 
+# 关于统一配置
+- build 拉取统一配置进行构建
+- 公共资源，build 优化，CDN 替换
+
+# 公共组件集成
+- 监控
+- 埋点
+
 其它：oclif
