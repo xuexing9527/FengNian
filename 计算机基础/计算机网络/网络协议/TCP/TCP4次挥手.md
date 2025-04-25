@@ -7,7 +7,6 @@ Maximum Segment Lifetime
 
 ## TIME_WAIT
 
-
 信息守恒，霍金信息悖论
 
 信息是被认知选中的 => 
