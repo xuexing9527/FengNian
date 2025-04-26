@@ -6,6 +6,8 @@ Maximum Segment Lifetime
 ## 四元组
 
 ## TIME_WAIT
+- 服务端和客户端
+- 等待 2 个 MSL
 
 信息守恒，霍金信息悖论
 
