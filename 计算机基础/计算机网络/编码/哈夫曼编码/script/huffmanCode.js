@@ -64,6 +64,7 @@ class Tree {
   }
 }
 
+// 这里需要 构建二叉树的 基础，需要练习
 const buildTree = () => {
   // 计算 chars 长度,需要多少二进制位编码
   const len = Object.values(chars).length
