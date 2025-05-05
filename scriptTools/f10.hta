@@ -1,0 +1,33 @@
+<html>
+<head>
+  <title>F10 自动按键器</title>
+  <meta charset="utf-8" />
+  <HTA:APPLICATION 
+    ID="f10auto"
+    APPLICATIONNAME="F10Auto"
+    BORDER="thin"
+    CAPTION="yes"
+    SHOWINTASKBAR="yes"
+    SINGLEINSTANCE="yes"
+    WINDOWSTATE="normal">
+  <script language="vbscript">
+    Dim shell
+    Set shell = CreateObject("WScript.Shell")
+    Sub sendF10()
+      shell.SendKeys "{F10}"
+    End Sub
+  </script>
+  <script language="javascript">
+    // 每10秒调用一次VBScript定义的sendF10
+    window.onload = function () {
+      setInterval(function () {
+        sendF10(); // 调用 VBScript 的函数
+      }, 10000);
+    };
+  </script>
+</head>
+<body style="font-family: sans-serif; padding: 1em;">
+  <h3>每 10 秒自动按一次 F10</h3>
+  <p>关闭这个窗口即终止脚本运行。</p>
+</body>
+</html>
