@@ -14,4 +14,6 @@ bind('click', handleClick, { stop: true, prevent: true });
 ### jQuery 时代
 ### AngularJS 指令
 
-## 对象写法和路径式命名的取舍，是否考虑 JSX？
+## 对象写法和路径式命名的取舍
+## 规范都高点的项目，弱化指令，是否考虑 JSX？
+## Vue3 拥抱 hooks 的情况下，会不会弱化指令？
