@@ -68,6 +68,16 @@ visualstudio 安装勾选：
 参考截图：
 ![安装选项参考截图](./images/install.png)
 
+参考编译命令：
+```
+# 两行
+npx node-gyp configure
+npx node-gyp build
+
+# 或执行下面一行 
+npx node-gyp rebuild
+```
+
 另外，  
 python 3.13 也不不一定支持， 要下载 python 3.10 版本 
 
