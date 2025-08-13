@@ -14,7 +14,6 @@ Promise 相当于异步操作的占位符，他不会去订阅一个事件，也
 - fulfilled
 - rejected
 
-
 unsettled
 - settled
 
