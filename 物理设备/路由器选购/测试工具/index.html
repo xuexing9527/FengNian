@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>路由器测试小工具</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; }
+    h1 { color: #333; }
+    button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+    #results { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .metric { margin: 8px 0; }
+    .loading { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>路由器指标快速测试</h1>
+  <p>点击按钮，测试你的网络下载速度和延迟，并推测当前 WiFi 频段。</p>
+  <button id="startTest">开始测试</button>
+
+  <div id="results"></div>
+
+  <script>
+    async function testDownloadSpeed() {
+      const fileUrl = "https://speed.cloudflare.com/__down?bytes=5000000"; // 5MB 文件
+      const start = performance.now();
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const end = performance.now();
+      const duration = (end - start) / 1000; // 秒
+      const bitsLoaded = blob.size * 8;
+      const speedMbps = (bitsLoaded / duration / (1024 * 1024)).toFixed(2);
+      return speedMbps;
+    }
+
+    async function testLatency(url = "https://speed.cloudflare.com/cdn-cgi/trace") {
+      const trials = 3;
+      let total = 0;
+      for (let i = 0; i < trials; i++) {
+        const start = performance.now();
+        await fetch(url + "?cachebuster=" + Math.random(), {cache: "no-store"});
+        total += (performance.now() - start);
+      }
+      return (total / trials).toFixed(2);
+    }
+
+    function guessBand(speedMbps) {
+      if (speedMbps > 200) return "大概率是 5GHz 或 WiFi 6/7";
+      if (speedMbps > 50) return "可能是 5GHz";
+      return "可能是 2.4GHz";
+    }
+
+    document.getElementById("startTest").addEventListener("click", async () => {
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "<p class='loading'>测试中，请稍候...</p>";
+
+      try {
+        const speed = await testDownloadSpeed();
+        const latency = await testLatency();
+        const band = guessBand(speed);
+
+        resultsDiv.innerHTML = `
+          <div class="metric"><b>下载速度：</b> ${speed} Mbps</div>
+          <div class="metric"><b>网络延迟：</b> ${latency} ms</div>
+          <div class="metric"><b>推测频段：</b> ${band}</div>
+          <hr>
+          <p>提示：结果受设备、网络环境影响，仅供参考。</p>
+        `;
+      } catch (err) {
+        resultsDiv.innerHTML = `<p style="color:red;">测试失败：${err.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
