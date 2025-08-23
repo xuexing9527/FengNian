@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>路由器测试与健康评分</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; }
+    h1 { color: #333; }
+    button { padding: 10px 20px; margin: 10px 0; cursor: pointer; border-radius: 6px; border: none; background: #007bff; color: white; }
+    button:hover { background: #0056b3; }
+    #results, #surveyResults { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .metric { margin: 8px 0; }
+    .loading { color: #888; }
+    fieldset { margin: 15px 0; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+    legend { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>路由器指标测试 & 健康评分</h1>
+  <p>1. 点击按钮，测试网络下载速度和延迟，并推测 WiFi 频段。</p>
+  <button id="startTest">开始测速</button>
+  <div id="results"></div>
+
+  <hr>
+
+  <p>2. 填写路由器配置问卷，生成健康评分。</p>
+  <form id="routerSurvey">
+    <fieldset>
+      <legend>路由器内存</legend>
+      <label><input type="radio" name="ram" value="128"> 128MB 或更少</label><br>
+      <label><input type="radio" name="ram" value="256"> 256MB</label><br>
+      <label><input type="radio" name="ram" value="512"> 512MB</label><br>
+      <label><input type="radio" name="ram" value="1024"> 1GB 或以上</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>是否支持 QoS（带宽优先级）</legend>
+      <label><input type="radio" name="qos" value="yes"> 支持</label>
+      <label><input type="radio" name="qos" value="no"> 不支持</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>是否支持 Mesh（全屋组网）</legend>
+      <label><input type="radio" name="mesh" value="yes"> 支持</label>
+      <label><input type="radio" name="mesh" value="no"> 不支持</label>
+    </fieldset>
+
+    <button type="submit">生成健康评分</button>
+  </form>
+
+  <div id="surveyResults"></div>
+
+  <script>
+    async function testDownloadSpeed() {
+      const fileUrl = "https://speed.cloudflare.com/__down?bytes=5000000"; // 5MB 文件
+      const start = performance.now();
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const end = performance.now();
+      const duration = (end - start) / 1000; // 秒
+      const bitsLoaded = blob.size * 8;
+      const speedMbps = (bitsLoaded / duration / (1024 * 1024)).toFixed(2);
+      return parseFloat(speedMbps);
+    }
+
+    async function testLatency(url = "https://speed.cloudflare.com/cdn-cgi/trace") {
+      const trials = 3;
+      let total = 0;
+      for (let i = 0; i < trials; i++) {
+        const start = performance.now();
+        await fetch(url + "?cachebuster=" + Math.random(), {cache: "no-store"});
+        total += (performance.now() - start);
+      }
+      return (total / trials).toFixed(2);
+    }
+
+    function guessBand(speedMbps) {
+      if (speedMbps > 200) return "大概率是 5GHz 或 WiFi 6/7";
+      if (speedMbps > 50) return "可能是 5GHz";
+      return "可能是 2.4GHz";
+    }
+
+    document.getElementById("startTest").addEventListener("click", async () => {
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "<p class='loading'>测试中，请稍候...</p>";
+
+      try {
+        const speed = await testDownloadSpeed();
+        const latency = await testLatency();
+        const band = guessBand(speed);
+
+        resultsDiv.innerHTML = `
+          <div class="metric"><b>下载速度：</b> ${speed} Mbps</div>
+          <div class="metric"><b>网络延迟：</b> ${latency} ms</div>
+          <div class="metric"><b>推测频段：</b> ${band}</div>
+          <hr>
+          <p>提示：结果受设备、网络环境影响，仅供参考。</p>
+        `;
+      } catch (err) {
+        resultsDiv.innerHTML = `<p style="color:red;">测速失败：${err.message}</p>`;
+      }
+    });
+
+    document.getElementById("routerSurvey").addEventListener("submit", function(e) {
+      e.preventDefault();
+      let score = 50; // 基础分
+      const form = new FormData(e.target);
+
+      // 内存加分
+      const ram = form.get("ram");
+      if (ram === "128") score += 0;
+      if (ram === "256") score += 10;
+      if (ram === "512") score += 20;
+      if (ram === "1024") score += 30;
+
+      // QoS
+      if (form.get("qos") === "yes") score += 10;
+
+      // Mesh
+      if (form.get("mesh") === "yes") score += 10;
+
+      // 健康评价
+      let health = "一般";
+      if (score >= 90) health = "优秀 ✅";
+      else if (score >= 70) health = "良好 👍";
+      else if (score >= 50) health = "一般 😐";
+      else health = "较差 ❌";
+
+      document.getElementById("surveyResults").innerHTML = `
+        <h3>健康评分结果</h3>
+        <p><b>得分：</b> ${score} / 100</p>
+        <p><b>评价：</b> ${health}</p>
+      `;
+    });
+  </script>
+</body>
+</html>

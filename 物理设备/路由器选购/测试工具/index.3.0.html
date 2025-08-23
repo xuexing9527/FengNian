@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>路由器压力测试 Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f4f4; }
+    h1 { color: #333; }
+    button { padding: 10px 20px; margin: 10px 0; cursor: pointer; border-radius: 6px; border: none; background: #007bff; color: white; }
+    button:hover { background: #0056b3; }
+    #results { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .metric { margin: 8px 0; }
+    canvas { background: #fff; border: 1px solid #ccc; margin-top: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>路由器压力测试 Demo</h1>
+  <p>本测试会连续 60 秒，发并发请求，检测延迟、丢包和下载速度表现。</p>
+  <button id="startTest">开始压力测试</button>
+  <div id="results"></div>
+
+  <canvas id="latencyChart" width="600" height="200"></canvas>
+  <canvas id="speedChart" width="600" height="200"></canvas>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+    const latencyCanvas = document.getElementById('latencyChart').getContext('2d');
+    const speedCanvas = document.getElementById('speedChart').getContext('2d');
+
+    async function singleRequest(url="https://speed.cloudflare.com/__down?bytes=1000000") {
+      const start = performance.now();
+      try {
+        const response = await fetch(url + "?cachebuster=" + Math.random(), {cache:"no-store"});
+        const blob = await response.blob();
+        const end = performance.now();
+        const duration = end - start;
+        const speedMbps = (blob.size * 8 / duration * 1000 / (1024*1024)).toFixed(2); // Mbps
+        return {latency: duration.toFixed(2), speed: parseFloat(speedMbps), success: true};
+      } catch (err) {
+        return {latency: null, speed: 0, success: false};
+      }
+    }
+
+    function drawChart(canvas, data, label) {
+      const ctx = canvas;
+      ctx.clearRect(0,0,canvas.canvas.width, canvas.canvas.height);
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.canvas.height - data[0]);
+      for(let i=1;i<data.length;i++){
+        ctx.lineTo(i*(canvas.canvas.width/data.length), canvas.canvas.height - data[i]);
+      }
+      ctx.strokeStyle = "#007bff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle="#333";
+      ctx.fillText(label, 10, 10);
+    }
+
+    document.getElementById('startTest').addEventListener('click', async () => {
+      resultsDiv.innerHTML = "<p class='metric'>测试中，请耐心等待 60 秒...</p>";
+
+      const latencyData = [];
+      const speedData = [];
+      let totalRequests = 0;
+      let failedRequests = 0;
+      const duration = 60; // 秒
+      const concurrent = 5; // 并发数
+
+      for (let sec=0; sec<duration; sec++) {
+        const promises = [];
+        for(let i=0;i<concurrent;i++){
+          promises.push(singleRequest());
+        }
+        const results = await Promise.all(promises);
+        let sumLatency=0, sumSpeed=0, successCount=0;
+        results.forEach(r=>{
+          totalRequests++;
+          if(r.success){
+            successCount++;
+            sumLatency += parseFloat(r.latency);
+            sumSpeed += r.speed;
+          } else {
+            failedRequests++;
+          }
+        });
+        const avgLatency = successCount>0 ? (sumLatency/successCount).toFixed(2) : null;
+        const avgSpeed = successCount>0 ? (sumSpeed/successCount).toFixed(2) : 0;
+        latencyData.push(avgLatency? avgLatency*0.5 : 0); // 缩放显示
+        speedData.push(avgSpeed*2); // 缩放显示
+      }
+
+      // 绘制曲线
+      drawChart(latencyCanvas, latencyData, "延迟(ms,缩放)");
+      drawChart(speedCanvas, speedData, "下载速度(Mbps,缩放)");
+
+      // 简单稳定性分数
+      const stabilityScore = Math.max(0, 100 - failedRequests/totalRequests*100);
+      resultsDiv.innerHTML = `
+        <div class="metric"><b>总请求：</b> ${totalRequests}</div>
+        <div class="metric"><b>失败请求：</b> ${failedRequests}</div>
+        <div class="metric"><b>稳定性评分：</b> ${stabilityScore.toFixed(0)} / 100</div>
+        <p>曲线图显示延迟和下载速率变化情况，越平滑越稳定。</p>
+      `;
+    });
+  </script>
+</body>
+</html>
