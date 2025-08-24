@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>路由器自适应压力测试 Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f4f4; }
+    h1 { color: #333; }
+    input, button { padding: 6px; margin: 5px 0; }
+    button { cursor: pointer; border-radius: 6px; border: none; background: #007bff; color: white; }
+    button:hover { background: #0056b3; }
+    #results { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    canvas { background: #fff; border: 1px solid #ccc; margin-top: 10px; border-radius: 6px; }
+    #countdown { font-weight: bold; color: #d9534f; }
+  </style>
+</head>
+<body>
+  <h1>路由器自适应压力测试 Demo</h1>
+  <p>设置并发请求数和测试时长，点击开始测试。</p>
+  <label>并发请求数: <input type="number" id="concurrent" value="5" min="1" max="50"></label><br>
+  <label>测试时长(秒): <input type="number" id="duration" value="300" min="10" max="600"></label><br>
+  <button id="startTest">开始压力测试</button>
+
+  <div id="countdown"></div>
+  <div id="results"></div>
+
+  <canvas id="latencyChart" width="600" height="200"></canvas>
+  <canvas id="speedChart" width="600" height="200"></canvas>
+  <canvas id="stabilityChart" width="600" height="200"></canvas>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+    const countdownDiv = document.getElementById('countdown');
+    const latencyCanvas = document.getElementById('latencyChart').getContext('2d');
+    const speedCanvas = document.getElementById('speedChart').getContext('2d');
+    const stabilityCanvas = document.getElementById('stabilityChart').getContext('2d');
+
+    async function singleRequest(url="https://speed.cloudflare.com/__down?bytes=1000000") {
+      const start = performance.now();
+      try {
+        const response = await fetch(url + "?cachebuster=" + Math.random(), {cache:"no-store"});
+        const blob = await response.blob();
+        const end = performance.now();
+        const duration = end - start;
+        const speedMbps = (blob.size * 8 / duration * 1000 / (1024*1024)).toFixed(2); // Mbps
+        return {latency: parseFloat(duration.toFixed(2)), speed: parseFloat(speedMbps), success: true};
+      } catch {
+        return {latency: null, speed: 0, success: false};
+      }
+    }
+
+    function drawChart(ctx, data, label) {
+      ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+      ctx.beginPath();
+      ctx.moveTo(0, ctx.canvas.height - (data[0]||0));
+      for(let i=1;i<data.length;i++){
+        ctx.lineTo(i*(ctx.canvas.width/data.length), ctx.canvas.height - (data[i]||0));
+      }
+      ctx.strokeStyle = "#007bff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle="#333";
+      ctx.fillText(label, 10, 10);
+    }
+
+    function stabilityGrade(score) {
+      if(score>=90) return "优秀 ✅";
+      if(score>=70) return "良好 👍";
+      if(score>=50) return "一般 😐";
+      return "较差 ❌";
+    }
+
+    document.getElementById('startTest').addEventListener('click', async () => {
+      const concurrent = parseInt(document.getElementById('concurrent').value) || 5;
+      const duration = parseInt(document.getElementById('duration').value) || 300;
+      resultsDiv.innerHTML = "<p class='metric'>测试中，请耐心等待...</p>";
+
+      const latencyData=[], speedData=[], stabilityData=[];
+      let totalRequests=0, failedRequests=0;
+
+      for(let sec=duration; sec>0; sec--){
+        countdownDiv.textContent = `倒计时：${sec} 秒`;
+
+        const promises = [];
+        for(let i=0;i<concurrent;i++){
+          promises.push(singleRequest());
+        }
+        const results = await Promise.all(promises);
+
+        let sumLatency=0, sumSpeed=0, successCount=0;
+        results.forEach(r=>{
+          totalRequests++;
+          if(r.success){
+            successCount++;
+            sumLatency += r.latency;
+            sumSpeed += r.speed;
+          } else failedRequests++;
+        });
+
+        const avgLatency = successCount>0 ? sumLatency/successCount : 0;
+        const avgSpeed = successCount>0 ? sumSpeed/successCount : 0;
+        const stabilityScore = Math.max(0, 100 - failedRequests/totalRequests*100);
+
+        latencyData.push(avgLatency*0.5); // 缩放显示
+        speedData.push(avgSpeed*2);       // 缩放显示
+        stabilityData.push(stabilityScore);
+
+        // 实时绘制曲线
+        drawChart(latencyCanvas, latencyData, "延迟(ms,缩放)");
+        drawChart(speedCanvas, speedData, "下载速度(Mbps,缩放)");
+        drawChart(stabilityCanvas, stabilityData, "稳定性评分");
+      }
+
+      // 最终结果
+      const finalScore = Math.max(0, 100 - failedRequests/totalRequests*100);
+      resultsDiv.innerHTML = `
+        <div class="metric"><b>总请求：</b>${totalRequests}</div>
+        <div class="metric"><b>失败请求：</b>${failedRequests}</div>
+        <div class="metric"><b>最终稳定性评分：</b>${finalScore.toFixed(0)} / 100</div>
+        <div class="metric"><b>压力分级：</b>${stabilityGrade(finalScore)}</div>
+        <p>曲线图实时显示延迟、速度和稳定性变化，越平滑越稳定。</p>
+      `;
+      countdownDiv.textContent = "测试完成 ✅";
+    });
+  </script>
+</body>
+</html>
