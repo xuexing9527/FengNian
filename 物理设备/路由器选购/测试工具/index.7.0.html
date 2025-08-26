@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>路由器自适应压力测试 + 报表 Demo</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f4f4; }
+  h1 { color: #333; }
+  input, button { padding: 6px; margin: 5px 0; }
+  button { cursor: pointer; border-radius: 6px; border: none; background: #007bff; color: white; }
+  button:hover { background: #0056b3; }
+  #results { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  canvas { background: #fff; border: 1px solid #ccc; margin-top: 10px; border-radius: 6px; }
+  #countdown { font-weight: bold; color: #d9534f; }
+</style>
+</head>
+<body>
+<h1>路由器自适应压力测试 + 报表 Demo</h1>
+<p>设置初始并发请求数和测试时长，点击开始测试。</p>
+<label>初始并发请求数: <input type="number" id="concurrent" value="5" min="1" max="50"></label><br>
+<label>测试时长(秒): <input type="number" id="duration" value="60" min="10" max="600"></label><br>
+<button id="startTest">开始测试</button>
+<button id="pauseTest" disabled>暂停</button>
+<button id="resumeTest" disabled>继续</button>
+<button id="stopTest" disabled>停止</button>
+
+<div id="countdown"></div>
+<div id="results"></div>
+
+<canvas id="latencyChart" width="600" height="200"></canvas>
+<canvas id="speedChart" width="600" height="200"></canvas>
+<canvas id="stabilityChart" width="600" height="200"></canvas>
+
+<script>
+const resultsDiv = document.getElementById('results');
+const countdownDiv = document.getElementById('countdown');
+const latencyCtx = document.getElementById('latencyChart').getContext('2d');
+const speedCtx = document.getElementById('speedChart').getContext('2d');
+const stabilityCtx = document.getElementById('stabilityChart').getContext('2d');
+
+let testInterval = null;
+let paused = false;
+let elapsed = 0;
+
+async function singleRequest(url="https://speed.cloudflare.com/__down?bytes=1000000") {
+    const start = performance.now();
+    try {
+        const response = await fetch(url + "?cachebuster=" + Math.random(), {cache:"no-store"});
+        const blob = await response.blob();
+        const end = performance.now();
+        const duration = end - start;
+        const speedMbps = (blob.size * 8 / duration * 1000 / (1024*1024)).toFixed(2);
+        return {latency: parseFloat(duration.toFixed(2)), speed: parseFloat(speedMbps), success: true};
+    } catch {
+        return {latency: null, speed: 0, success: false};
+    }
+}
+
+function drawLineChart(ctx, data, label, color="#007bff") {
+    ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+    ctx.fillStyle="#000";
+    ctx.font = "12px Arial";
+    ctx.fillText(label, 10, 15);
+
+    // y轴刻度
+    const maxVal = Math.max(...data, 10);
+    for(let i=0;i<=5;i++){
+        const y = h - (i/5)*h;
+        ctx.fillText(Math.round((i/5)*maxVal), 0, y);
+        ctx.beginPath();
+        ctx.moveTo(30, y);
+        ctx.lineTo(w, y);
+        ctx.strokeStyle="#eee";
+        ctx.stroke();
+    }
+
+    // x轴刻度
+    const step = Math.ceil(data.length/10);
+    for(let i=0;i<data.length;i+=step){
+        const x = i*(w/data.length);
+        ctx.fillText(i, x, h-2);
+    }
+
+    // 绘制曲线
+    ctx.beginPath();
+    ctx.moveTo(0, h - (data[0]/maxVal)*h);
+    for(let i=1;i<data.length;i++){
+        ctx.lineTo(i*(w/data.length), h - (data[i]/maxVal)*h);
+    }
+    ctx.strokeStyle=color;
+    ctx.lineWidth=2;
+    ctx.stroke();
+}
+
+function stabilityGrade(score){
+    if(score>=90) return "优秀 ✅";
+    if(score>=70) return "良好 👍";
+    if(score>=50) return "一般 😐";
+    return "较差 ❌";
+}
+
+document.getElementById('startTest').addEventListener('click', ()=>{
+    const concurrentInput = parseInt(document.getElementById('concurrent').value)||5;
+    const durationInput = parseInt(document.getElementById('duration').value)||60;
+
+    resultsDiv.innerHTML="<p>测试中...</p>";
+    document.getElementById('pauseTest').disabled=false;
+    document.getElementById('stopTest').disabled=false;
+    document.getElementById('startTest').disabled=true;
+
+    let concurrent = concurrentInput;
+    const duration = durationInput;
+
+    let latencyData=[], speedData=[], stabilityData=[];
+    let totalRequests=0, failedRequests=0;
+    let minStabilityScore=100, bottleneckSecond=0;
+    let maxConcurrent=concurrent;
+
+    elapsed = 0;
+    paused = false;
+
+    testInterval = setInterval(async ()=>{
+        if(paused) return;
+        if(elapsed>=duration){
+            clearInterval(testInterval);
+            const finalScore = Math.max(0, 100 - failedRequests/totalRequests*100);
+            resultsDiv.innerHTML=`
+            <b>最终压力分级报表</b><br>
+            总请求: ${totalRequests}<br>
+            失败请求: ${failedRequests}<br>
+            最终稳定性评分: ${finalScore.toFixed(0)} / 100<br>
+            压力分级: ${stabilityGrade(finalScore)}<br>
+            硬件瓶颈点: ${bottleneckSecond>0?bottleneckSecond+"秒时稳定性最低": "未发现"}<br>
+            最大承载并发数: ${maxConcurrent}
+            `;
+            countdownDiv.textContent="测试完成 ✅";
+            document.getElementById('pauseTest').disabled=true;
+            document.getElementById('resumeTest').disabled=true;
+            document.getElementById('stopTest').disabled=true;
+            document.getElementById('startTest').disabled=false;
+            return;
+        }
+
+        countdownDiv.textContent=`倒计时：${duration-elapsed} 秒`;
+
+        const promises = [];
+        for(let i=0;i<concurrent;i++) promises.push(singleRequest());
+        const results = await Promise.all(promises);
+
+        let sumLatency=0, sumSpeed=0, successCount=0;
+        results.forEach(r=>{
+            totalRequests++;
+            if(r.success){
+                successCount++;
+                sumLatency+=r.latency;
+                sumSpeed+=r.speed;
+            }else failedRequests++;
+        });
+
+        const avgLatency = successCount>0 ? sumLatency/successCount : 0;
+        const avgSpeed = successCount>0 ? sumSpeed/successCount : 0;
+        const stabilityScore = Math.max(0, 100 - failedRequests/totalRequests*100);
+
+        if(stabilityScore<minStabilityScore){
+            minStabilityScore=stabilityScore;
+            bottleneckSecond=elapsed+1;
+        }
+
+        if(concurrent>maxConcurrent) maxConcurrent=concurrent;
+
+        latencyData.push(avgLatency);
+        speedData.push(avgSpeed);
+        stabilityData.push(stabilityScore);
+
+        drawLineChart(latencyCtx, latencyData, "延迟(ms)", "#ff5722");
+        drawLineChart(speedCtx, speedData, "下载速度(Mbps)", "#4caf50");
+        drawLineChart(stabilityCtx, stabilityData, "稳定性评分", "#007bff");
+
+        // 自适应并发
+        const successRate = successCount/concurrent;
+        if(successRate>0.9) concurrent++;
+        else if(successRate<0.5 && concurrent>1) concurrent--;
+
+        elapsed++;
+    }, 1000);
+});
+
+document.getElementById('pauseTest').addEventListener('click', ()=>{paused=true; document.getElementById('resumeTest').disabled=false;});
+document.getElementById('resumeTest').addEventListener('click', ()=>{paused=false; document.getElementById('resumeTest').disabled=true;});
+document.getElementById('stopTest').addEventListener('click', ()=>{clearInterval(testInterval); countdownDiv.textContent="测试停止 ❌"; document.getElementById('pauseTest').disabled=true; document.getElementById('resumeTest').disabled=true; document.getElementById('stopTest').disabled=true; document.getElementById('startTest').disabled=false;});
+</script>
+</body>
+</html>
