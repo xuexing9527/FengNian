@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>JS 少样本神经网络 Demo：猫狗识别 & 红绿灯识别</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 24px; }
+    h1 { font-size: 20px; margin-bottom: 12px; }
+    h2 { font-size: 18px; margin: 24px 0 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .card { border: 1px solid #e6e6e6; border-radius: 12px; padding: 16px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+    button { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fafafa; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #eee; background: #f7f7f7; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+    .thumbs { display: grid; grid-template-columns: repeat(auto-fill, 80px); gap: 6px; }
+    .thumbs img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
+    .log { white-space: pre-wrap; background: #0a0a0a; color: #e5e5e5; padding: 12px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; max-height: 240px; overflow: auto; }
+    .muted { color: #777; font-size: 12px; }
+    .badge { font-size: 12px; padding: 2px 6px; border-radius: 6px; border: 1px solid #e0e0e0; background: #f5f5f5; }
+    .sep { height: 1px; background: #eee; margin: 12px 0; }
+  </style>
+  <!-- TensorFlow.js & MobileNet（CDN） -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.18.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0"></script>
+</head>
+<body>
+  <h1>JS 少样本神经网络 Demo</h1>
+  <p class="muted">在浏览器内用 <strong>MobileNet</strong> 做特征提取（冻结），在其上训练一个小型 <strong>Dense</strong> 分类器（可微、反向传播）。你可以各自上传几张图片进行“猫 vs 狗”以及“红 vs 绿”交通灯识别的即刻训练与推理。</p>
+
+  <div id="status" class="badge">状态：加载中…</div>
+
+  <div class="row" style="margin-top:16px;">
+    <!-- 猫狗识别 -->
+    <section class="card">
+      <h2>① 猫 vs 狗</h2>
+      <div class="controls">
+        <label class="pill">添加到 <strong>猫</strong> <input id="catFiles" multiple accept="image/*" type="file" style="display:none;"></label>
+        <button id="btnAddCat">选择图片</button>
+        <label class="pill">添加到 <strong>狗</strong> <input id="dogFiles" multiple accept="image/*" type="file" style="display:none;"></label>
+        <button id="btnAddDog">选择图片</button>
+        <span class="pill">样本数：猫 <span id="countCat">0</span> / 狗 <span id="countDog">0</span></span>
+      </div>
+      <div class="thumbs" id="thumbsCat"></div>
+      <div class="thumbs" id="thumbsDog" style="margin-top:6px;"></div>
+      <div class="sep"></div>
+      <div class="controls">
+        <button id="btnTrainCatDog" disabled>训练分类器</button>
+        <span class="muted">（建议每类 ≥ 5 张）</span>
+      </div>
+      <div class="controls">
+        <label class="pill">测试图片 <input id="testCatDog" accept="image/*" type="file" style="display:none;"></label>
+        <button id="btnPickTestCatDog" disabled>选择图片并预测</button>
+        <span id="predCatDog" class="badge">预测：—</span>
+      </div>
+      <div id="logCatDog" class="log"></div>
+    </section>
+
+    <!-- 红绿灯识别 -->
+    <section class="card">
+      <h2>② 红灯 vs 绿灯</h2>
+      <div class="controls">
+        <label class="pill">添加到 <strong>红灯</strong> <input id="redFiles" multiple accept="image/*" type="file" style="display:none;"></label>
+        <button id="btnAddRed">选择图片</button>
+        <label class="pill">添加到 <strong>绿灯</strong> <input id="greenFiles" multiple accept="image/*" type="file" style="display:none;"></label>
+        <button id="btnAddGreen">选择图片</button>
+        <span class="pill">样本数：红 <span id="countRed">0</span> / 绿 <span id="countGreen">0</span></span>
+      </div>
+      <div class="thumbs" id="thumbsRed"></div>
+      <div class="thumbs" id="thumbsGreen" style="margin-top:6px;"></div>
+      <div class="sep"></div>
+      <div class="controls">
+        <button id="btnTrainTraffic" disabled>训练分类器</button>
+        <span class="muted">（建议每类 ≥ 5 张）</span>
+      </div>
+      <div class="controls">
+        <label class="pill">测试图片 <input id="testTraffic" accept="image/*" type="file" style="display:none;"></label>
+        <button id="btnPickTestTraffic" disabled>选择图片并预测</button>
+        <span id="predTraffic" class="badge">预测：—</span>
+      </div>
+      <div id="logTraffic" class="log"></div>
+    </section>
+  </div>
+
+<script>
+/**
+ * 高层逻辑（可读做“推理过程”）：
+ * 1) 用 MobileNet 做特征提取：对每张图片 x 计算 embedding e = φ(x) ∈ R^d；
+ *    φ 由预训练 CNN 给出（冻结，不更新）。
+ * 2) 在 embedding 空间上，训练一个小的 MLP 分类器 f(e) = softmax(W2·relu(W1·e+b1)+b2)。
+ *    损失为交叉熵 L = -Σ y·log f(e)，用 Adam 反向传播更新 W1/W2/b1/b2。
+ * 3) 预测时：取待测图像 x*，计算 e* = φ(x*)，输出 p = f(e*)，即各类别的概率。
+ */
+
+let net; // MobileNet 特征提取器
+
+// 工具：将 File 读成 <img>
+function fileToImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// 用 MobileNet 提取 embedding，返回 1D Tensor（长度 d）
+async function embedImage(img) {
+  return tf.tidy(() => {
+    const activation = net.infer(img, true); // penultimate layer embedding, shape [1,d]
+    return activation.squeeze(); // shape [d]
+  });
+}
+
+// 小型分类器：Dense(64, relu) -> Dense(k, softmax)
+function buildClassifier(inputDim, numClasses) {
+  const model = tf.sequential();
+  model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [inputDim] }));
+  model.add(tf.layers.dense({ units: numClasses, activation: 'softmax' }));
+  model.compile({ optimizer: tf.train.adam(0.001), loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
+  return model;
+}
+
+// 数据容器
+class FewShotTask {
+  constructor(name, labels, ui) {
+    this.name = name;
+    this.labels = labels; // [labelA, labelB]
+    this.ui = ui; // {counts, thumbsA, thumbsB, log, pred, buttons}
+    this.embeddings = []; // Tensor[]
+    this.y = []; // number labels 0..k-1
+    this.model = null;
+    this.inputDim = null;
+  }
+  addExample(embedding, labelIndex, thumbImg) {
+    if (this.inputDim == null) this.inputDim = embedding.shape[0];
+    this.embeddings.push(embedding); // 注意：外部不 dispose，训练后统一清理
+    this.y.push(labelIndex);
+    if (thumbImg) (labelIndex === 0 ? this.ui.thumbsA : this.ui.thumbsB).appendChild(thumbImg);
+    this.updateCounts();
+  }
+  updateCounts() {
+    const a = this.y.filter(v => v === 0).length;
+    const b = this.y.filter(v => v === 1).length;
+    this.ui.countA.textContent = a;
+    this.ui.countB.textContent = b;
+    this.ui.btnTrain.disabled = !(a >= 2 && b >= 2);
+  }
+  async train(epochs = 20, batchSize = 8) {
+    if (!this.inputDim) throw new Error('尚无样本');
+    const X = tf.tidy(() => tf.stack(this.embeddings)); // [n,d]
+    const Y = tf.tidy(() => tf.oneHot(tf.tensor1d(this.y, 'int32'), this.labels.length)); // [n,k]
+    this.model = buildClassifier(this.inputDim, this.labels.length);
+    this.ui.log.textContent += `\n开始训练 ${this.name}：样本 n=${this.y.length}, 维度 d=${this.inputDim}\n`;
+    const h = await this.model.fit(X, Y, {
+      epochs, batchSize, shuffle: true,
+      callbacks: {
+        onEpochEnd: (epoch, logs) => {
+          this.ui.log.textContent += `Epoch ${epoch+1}/${epochs}  loss=${logs.loss.toFixed(4)}  acc=${(logs.acc||logs.accuracy).toFixed(4)}\n`;
+          this.ui.log.scrollTop = this.ui.log.scrollHeight;
+        }
+      }
+    });
+    X.dispose(); Y.dispose();
+    this.ui.log.textContent += `\n训练完成。`;
+    this.ui.btnPickTest.disabled = false;
+  }
+  async predictFromFile(file) {
+    const img = await fileToImage(file);
+    const embedding = await embedImage(img);
+    const probs = tf.tidy(() => this.model.predict(embedding.expandDims(0)).squeeze());
+    const p = await probs.array();
+    const maxIdx = p.indexOf(Math.max(...p));
+    const label = this.labels[maxIdx];
+    this.ui.pred.textContent = `预测：${label}  (p=[${p.map(v=>v.toFixed(3)).join(', ')}])`;
+    embedding.dispose(); probs.dispose();
+  }
+}
+
+// UI 绑定（猫狗）
+const uiCatDog = {
+  countA: document.getElementById('countCat'),
+  countB: document.getElementById('countDog'),
+  thumbsA: document.getElementById('thumbsCat'),
+  thumbsB: document.getElementById('thumbsDog'),
+  log: document.getElementById('logCatDog'),
+  pred: document.getElementById('predCatDog'),
+  btnTrain: document.getElementById('btnTrainCatDog'),
+  btnPickTest: document.getElementById('btnPickTestCatDog')
+};
+const taskCatDog = new FewShotTask('猫狗识别', ['猫','狗'], uiCatDog);
+
+// UI 绑定（红绿灯）
+const uiTraffic = {
+  countA: document.getElementById('countRed'),
+  countB: document.getElementById('countGreen'),
+  thumbsA: document.getElementById('thumbsRed'),
+  thumbsB: document.getElementById('thumbsGreen'),
+  log: document.getElementById('logTraffic'),
+  pred: document.getElementById('predTraffic'),
+  btnTrain: document.getElementById('btnTrainTraffic'),
+  btnPickTest: document.getElementById('btnPickTestTraffic')
+};
+const taskTraffic = new FewShotTask('红绿灯识别', ['红','绿'], uiTraffic);
+
+// 文件添加（猫/狗）
+const catFiles = document.getElementById('catFiles');
+const dogFiles = document.getElementById('dogFiles');
+const btnAddCat = document.getElementById('btnAddCat');
+const btnAddDog = document.getElementById('btnAddDog');
+btnAddCat.onclick = () => catFiles.click();
+btnAddDog.onclick = () => dogFiles.click();
+catFiles.onchange = async (e) => addFilesToTask(e.target.files, taskCatDog, 0);
+dogFiles.onchange = async (e) => addFilesToTask(e.target.files, taskCatDog, 1);
+
+// 文件添加（红/绿）
+const redFiles = document.getElementById('redFiles');
+const greenFiles = document.getElementById('greenFiles');
+const btnAddRed = document.getElementById('btnAddRed');
+const btnAddGreen = document.getElementById('btnAddGreen');
+btnAddRed.onclick = () => redFiles.click();
+btnAddGreen.onclick = () => greenFiles.click();
+redFiles.onchange = async (e) => addFilesToTask(e.target.files, taskTraffic, 0);
+greenFiles.onchange = async (e) => addFilesToTask(e.target.files, taskTraffic, 1);
+
+// 训练按钮
+uiCatDog.btnTrain.onclick = () => taskCatDog.train(20, 8);
+uiTraffic.btnTrain.onclick = () => taskTraffic.train(20, 8);
+
+// 测试按钮
+const testCatDog = document.getElementById('testCatDog');
+const btnPickTestCatDog = document.getElementById('btnPickTestCatDog');
+btnPickTestCatDog.onclick = () => testCatDog.click();
+testCatDog.onchange = (e) => taskCatDog.predictFromFile(e.target.files[0]);
+
+const testTraffic = document.getElementById('testTraffic');
+const btnPickTestTraffic = document.getElementById('btnPickTestTraffic');
+btnPickTestTraffic.onclick = () => testTraffic.click();
+testTraffic.onchange = (e) => taskTraffic.predictFromFile(e.target.files[0]);
+
+// 将一组文件加入到任务的某一类
+async function addFilesToTask(fileList, task, labelIndex) {
+  if (!fileList || !fileList.length) return;
+  for (const f of fileList) {
+    const img = await fileToImage(f);
+    const emb = await embedImage(img);
+    const thumb = img; // 直接复用 img 作为缩略图显示
+    thumb.width = 80; thumb.height = 80; // 样式里也会限制
+    task.addExample(emb, labelIndex, thumb);
+  }
+}
+
+// 加载 MobileNet
+(async () => {
+  document.getElementById('status').textContent = '状态：正在加载 MobileNet…';
+  net = await mobilenet.load({ version: 2, alpha: 0.5 }); // 体积/速度权衡
+  document.getElementById('status').textContent = '状态：就绪（请先添加样本）';
+})();
+</script>
+</body>
+</html>
