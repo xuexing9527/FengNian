@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mini Neural Network - AND</title>
+</head>
+<body>
+  <h2>神经网络学习 AND 逻辑</h2>
+  <pre id="log"></pre>
+
+  <script>
+    // sigmoid 激活函数 + 导数
+    function sigmoid(x) {
+      return 1 / (1 + Math.exp(-x));
+    }
+    function sigmoidDerivative(x) {
+      return x * (1 - x);
+    }
+
+    // 数据集：输入 [x1, x2] → 输出 y
+    const training_data = [
+      {inputs: [0,0], output: [0]},
+      {inputs: [0,1], output: [0]},
+      {inputs: [1,0], output: [0]},
+      {inputs: [1,1], output: [1]},
+    ];
+
+    // 随机初始化权重和偏置（2输入 → 2隐藏 → 1输出）
+    let w_ih = [ [Math.random(), Math.random()],
+                 [Math.random(), Math.random()] ]; // 输入→隐藏
+    let b_h = [Math.random(), Math.random()];
+    let w_ho = [Math.random(), Math.random()]; // 隐藏→输出
+    let b_o = Math.random();
+
+    const lr = 0.5; // 学习率
+    const logEl = document.getElementById("log");
+
+    function train(iterations=5000) {
+      for (let i=0; i<iterations; i++) {
+        // 随机取一个训练样本
+        const data = training_data[Math.floor(Math.random()*training_data.length)];
+        const x1 = data.inputs[0], x2 = data.inputs[1];
+        const target = data.output[0];
+
+        // ---- 前向传播 ----
+        const h1_input = x1*w_ih[0][0] + x2*w_ih[1][0] + b_h[0];
+        const h2_input = x1*w_ih[0][1] + x2*w_ih[1][1] + b_h[1];
+        const h1 = sigmoid(h1_input);
+        const h2 = sigmoid(h2_input);
+
+        const o_input = h1*w_ho[0] + h2*w_ho[1] + b_o;
+        const output = sigmoid(o_input);
+
+        // ---- 反向传播 ----
+        const error = target - output;
+
+        // 输出层梯度
+        const d_output = error * sigmoidDerivative(output);
+
+        // 隐藏层误差
+        const d_h1 = d_output * w_ho[0] * sigmoidDerivative(h1);
+        const d_h2 = d_output * w_ho[1] * sigmoidDerivative(h2);
+
+        // 更新权重 & 偏置
+        w_ho[0] += lr * d_output * h1;
+        w_ho[1] += lr * d_output * h2;
+        b_o     += lr * d_output;
+
+        w_ih[0][0] += lr * d_h1 * x1;
+        w_ih[1][0] += lr * d_h1 * x2;
+        w_ih[0][1] += lr * d_h2 * x1;
+        w_ih[1][1] += lr * d_h2 * x2;
+        b_h[0]     += lr * d_h1;
+        b_h[1]     += lr * d_h2;
+
+        // 每隔一段时间打印误差
+        if (i % 1000 === 0) {
+          logEl.textContent += `迭代 ${i}, 误差=${error.toFixed(4)}\n`;
+        }
+      }
+    }
+
+    function test() {
+      logEl.textContent += "\n测试结果:\n";
+      for (let d of training_data) {
+        const h1 = sigmoid(d.inputs[0]*w_ih[0][0] + d.inputs[1]*w_ih[1][0] + b_h[0]);
+        const h2 = sigmoid(d.inputs[0]*w_ih[0][1] + d.inputs[1]*w_ih[1][1] + b_h[1]);
+        const output = sigmoid(h1*w_ho[0] + h2*w_ho[1] + b_o);
+        logEl.textContent += `[${d.inputs}] → ${output.toFixed(3)} (期望=${d.output[0]})\n`;
+      }
+    }
+
+    train(10000);
+    test();
+  </script>
+</body>
+</html>
