@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>美团商家价格收入计算器（可改）</title>
+  <style>
+    :root{--bg:#0b1220;--card:#111a2b;--muted:#9fb0c3;--text:#e6eef7;--accent:#5bbcff;--ok:#79e27d;--warn:#ffd166}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1220,#0b1220 60%,#0a0f1a);color:var(--text);font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:1100px;margin:24px auto;padding:16px}
+    h1{font-size:22px;margin:0 0 12px}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media (min-width:940px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:var(--card);border:1px solid #1b2a44;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .card h2{font-size:16px;margin:0 0 8px}
+    label{display:block;margin:10px 0 4px;color:var(--muted)}
+    input[type=number],input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid #263b60;background:#0c1627;color:var(--text)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .help{font-size:12px;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#0e1b33;color:#9cc9ff;border:1px solid #1b2a44;font-size:12px}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    button{cursor:pointer;border:1px solid #2a4270;background:#0f1c36;color:#dbeaff;border-radius:12px;padding:8px 12px}
+    button.primary{background:linear-gradient(180deg,#1373ff,#0056d6);border-color:#0d5ae6}
+    .out{display:grid;gap:8px}
+    .out .kpi{background:#0d1526;border:1px dashed #233456;border-radius:14px;padding:12px}
+    .kpi h3{margin:0 0 4px;font-size:15px}
+    .kpi .num{font-size:22px;font-weight:700}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .foot{margin-top:12px;font-size:12px;color:var(--muted)}
+    details{border:1px solid #1b2a44;border-radius:12px;padding:10px;background:#0b1529}
+    summary{cursor:pointer;color:#a8c6ff}
+    .warn{color:var(--warn)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>美团商家价格收入计算器 <span class="pill">单文件HTML，可直接改代码</span></h1>
+    <div class="grid">
+      <!-- 基础参数 -->
+      <section class="card">
+        <h2>① 基础参数</h2>
+        <div class="row">
+          <div>
+            <label>佣金比例 %（例：7 表示 7%）</label>
+            <input id="commissionPct" type="number" step="0.1" min="0" value="7">
+          </div>
+          <div>
+            <label>订单价格（用于配送服务费的“价格档”判断）</label>
+            <input id="priceForTier" type="number" step="0.01" min="0" value="28">
+            <div class="help">仅用于 <b>配送服务费</b> 的价格阶梯：0~20 收费0；20~30 收费0.85；30+ 收费4.48。</div>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>配送距离（公里 km）</label>
+            <input id="distanceKm" type="number" step="0.1" min="0" value="3.5">
+          </div>
+          <div>
+            <label>距离进位规则（>3km 的部分）</label>
+            <div>
+              <label class="help"><input type="radio" name="rounding" value="ceil" checked> 向上取整（推荐，按每“开始的”公里计费）</label>
+              <label class="help"><input type="radio" name="rounding" value="linear"> 不取整（按实际小数线性计费）</label>
+            </div>
+          </div>
+        </div>
+        <details style="margin-top:8px">
+          <summary>配送服务费算法说明</summary>
+          <div class="help">
+            <ul>
+              <li>距离收费：0~3 公里收 <b>2.4</b>；超过 3 公里部分，按 <b>0.5/公里</b> 计。</li>
+              <li>价格收费：订单价格 0~20 元 <b>0</b>；20~30 元 <b>0.85</b>；30 元以上 <b>4.48</b>。</li>
+              <li>总配送服务费 = 距离收费 + 价格收费。</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <!-- 商品与补贴 -->
+      <section class="card">
+        <h2>② 商品与补贴</h2>
+        <div class="row">
+          <div>
+            <label>商品原价合计（含赠品）</label>
+            <input id="originTotal" type="number" step="0.01" min="0" value="48">
+          </div>
+          <div>
+            <label>商家承担 1：原价 - 折扣价</label>
+            <input id="sub1" type="number" step="0.01" min="0" value="5">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>商家承担 2：赠品价格合计</label>
+            <input id="sub2" type="number" step="0.01" min="0" value="3">
+          </div>
+          <div>
+            <label>商家承担 3：配送费最高承担（手动输入）</label>
+            <input id="sub3" type="number" step="0.01" min="0" value="1">
+            <div class="help">注：平台对顾客端另收配送费（如 4.5），所谓“平台承担 1 元”多为在顾客支付中抵扣，并非平台额外出资。</div>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>商家承担 4：商家代金券</label>
+            <input id="sub4" type="number" step="0.01" min="0" value="2">
+          </div>
+          <div>
+            <label>商家承担 5：神券最高承担（手动输入）</label>
+            <input id="sub5" type="number" step="0.01" min="0" value="0">
+          </div>
+        </div>
+      </section>
+
+      <!-- 顾客端参数 -->
+      <section class="card">
+        <h2>③ 顾客端参数</h2>
+        <div class="row">
+          <div>
+            <label>顾客端配送费（手动输入，顾客实际支付）</label>
+            <input id="custShipFee" type="number" step="0.01" min="0" value="4.5">
+          </div>
+          <div>
+            <label>平台活动补贴（用于顾客端口径）</label>
+            <input id="platformSubsidy" type="number" step="0.01" min="0" value="0">
+          </div>
+        </div>
+      </section>
+
+      <!-- 结果输出 -->
+      <section class="card">
+        <h2>④ 结果</h2>
+        <div class="out">
+          <div class="kpi">
+            <h3>商家对顾客的活动补贴（求和）</h3>
+            <div class="num mono" id="merchantSubsidy">-</div>
+            <div class="help">= 承担1 + 承担2 + 承担3 + 承担4 + 承担5</div>
+          </div>
+          <div class="split">
+            <div class="kpi">
+              <h3>商品优惠后金额</h3>
+              <div class="num mono" id="discounted">-</div>
+              <div class="help">= 商品原价合计 - 商家对顾客的活动补贴</div>
+            </div>
+            <div class="kpi">
+              <h3>佣金金额</h3>
+              <div class="num mono" id="commissionAmt">-</div>
+              <div class="help">= 商品优惠后金额 × 佣金比例</div>
+            </div>
+          </div>
+          <div class="kpi">
+            <h3>配送服务费（系统计算）</h3>
+            <div class="num mono" id="shipServiceFee">-</div>
+            <div class="help" id="shipBreak">—</div>
+          </div>
+          <div class="kpi">
+            <h3>商家最终结果（收入/到手）</h3>
+            <div class="num mono" id="merchantNet">-</div>
+            <div class="help">= 商品优惠后金额 - 佣金金额 - 配送服务费</div>
+          </div>
+          <div class="kpi">
+            <h3>顾客端实付</h3>
+            <div class="num mono" id="customerPay">-</div>
+            <div class="help">= 商品优惠后金额 - 顾客端配送费 - 平台活动补贴</div>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="primary" id="recalcBtn">重新计算</button>
+          <button id="fillSample">填入示例数据</button>
+          <button id="resetAll">清空</button>
+        </div>
+        <div class="foot">
+          <span class="warn">提示：</span>本页为演算工具，具体规则以平台条款与实际结算为准。你可以直接修改公式或样式。
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // —— 工具函数 ——
+    const $ = sel => document.querySelector(sel);
+    const num = v => {
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const fx = v => (Number.isFinite(v) ? v.toFixed(2) : '-')
+    
+    /**
+     * 配送服务费 = 距离收费 + 价格收费
+     * 距离收费：0~3km 收 2.40；>3km 的部分按 0.50/公里
+     * 价格收费：0~20 收 0；20~30 收 0.85；30+ 收 4.48
+     * @param {number} distanceKm - 配送距离（公里）
+     * @param {number} priceForTier - 用于价格档判断的“订单价格”
+     * @param {('ceil'|'linear')} rounding - >3km 部分的进位规则
+     */
+    function calcDeliveryServiceFee(distanceKm, priceForTier, rounding){
+      // —— 距离收费 ——
+      let distanceFee = 0;
+      if(distanceKm <= 3){
+        // 0~3 公里统一 2.4
+        distanceFee = 2.4;
+      }else{
+        const extra = Math.max(0, distanceKm - 3);
+        const extraUnits = rounding === 'ceil' ? Math.ceil(extra) : extra; // 选择向上取整或线性
+        distanceFee = 2.4 + 0.5 * extraUnits;
+      }
+
+      // —— 价格收费 ——
+      let priceFee = 0;
+      if(priceForTier < 20){
+        priceFee = 0;
+      }else if(priceForTier < 30){
+        priceFee = 0.85;
+      }else{
+        priceFee = 4.48;
+      }
+
+      return {total: distanceFee + priceFee, distanceFee, priceFee};
+    }
+
+    /**
+     * 商家对顾客的活动补贴（求和函数）
+     * @param {number[]} parts - [承担1, 承担2, 承担3, 承担4, 承担5]
+     */
+    function sumMerchantSubsidy(parts){
+      return parts.reduce((acc, x) => acc + (Number.isFinite(x)?x:0), 0);
+    }
+
+    // —— 获取输入元素 ——
+    const els = {
+      commissionPct: $('#commissionPct'),
+      priceForTier: $('#priceForTier'),
+      distanceKm: $('#distanceKm'),
+      rounding: () => document.querySelector('input[name=rounding]:checked')?.value || 'ceil',
+      originTotal: $('#originTotal'),
+      sub1: $('#sub1'), sub2: $('#sub2'), sub3: $('#sub3'), sub4: $('#sub4'), sub5: $('#sub5'),
+      custShipFee: $('#custShipFee'),
+      platformSubsidy: $('#platformSubsidy'),
+      // 输出
+      merchantSubsidy: $('#merchantSubsidy'),
+      discounted: $('#discounted'),
+      commissionAmt: $('#commissionAmt'),
+      shipServiceFee: $('#shipServiceFee'),
+      shipBreak: $('#shipBreak'),
+      merchantNet: $('#merchantNet'),
+      customerPay: $('#customerPay'),
+      // 按钮
+      recalcBtn: $('#recalcBtn'),
+      fillSample: $('#fillSample'),
+      resetAll: $('#resetAll')
+    };
+
+    function recalc(){
+      // 输入数值
+      const commissionRate = num(els.commissionPct.value) / 100; // 佣金百分比转小数
+      const priceForTier = num(els.priceForTier.value);
+      const distanceKm = num(els.distanceKm.value);
+      const rounding = els.rounding();
+      const originTotal = num(els.originTotal.value);
+      const parts = [num(els.sub1.value), num(els.sub2.value), num(els.sub3.value), num(els.sub4.value), num(els.sub5.value)];
+      const custShipFee = num(els.custShipFee.value);
+      const platformSubsidy = num(els.platformSubsidy.value);
+
+      // 1) 商家补贴合计
+      const merchantSub = sumMerchantSubsidy(parts);
+      els.merchantSubsidy.textContent = fx(merchantSub);
+
+      // 2) 商品优惠后金额（按题意：原价 - 商家补贴）
+      const discounted = originTotal - merchantSub;
+      els.discounted.textContent = fx(discounted);
+
+      // 3) 佣金金额（按题意：优惠后金额 × 佣金比例）
+      const commissionAmt = discounted * commissionRate;
+      els.commissionAmt.textContent = fx(commissionAmt);
+
+      // 4) 配送服务费（系统计算）
+      const ship = calcDeliveryServiceFee(distanceKm, priceForTier, rounding);
+      els.shipServiceFee.textContent = fx(ship.total);
+      els.shipBreak.textContent = `距离收费 ${fx(ship.distanceFee)} + 价格收费 ${fx(ship.priceFee)} = 合计 ${fx(ship.total)}`;
+
+      // 5) 商家最终结果（收入）= 优惠后金额 - 佣金 - 配送服务费
+      const merchantNet = discounted - commissionAmt - ship.total;
+      els.merchantNet.textContent = fx(merchantNet);
+
+      // 6) 顾客端实付 = 优惠后金额 + 顾客端配送费 - 平台活动补贴
+      const customerPay = discounted + custShipFee - platformSubsidy;
+      els.customerPay.textContent = fx(customerPay);
+    }
+
+    function bind(){
+      // 所有输入变更都重算
+      document.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalc));
+      els.recalcBtn.addEventListener('click', recalc);
+      els.fillSample.addEventListener('click', () => {
+        els.commissionPct.value = 7;
+        els.priceForTier.value = 28;
+        els.distanceKm.value = 3.5;
+        document.querySelector('input[name=rounding][value=ceil]').checked = true;
+        els.originTotal.value = 48;
+        els.sub1.value = 5; els.sub2.value = 3; els.sub3.value = 1; els.sub4.value = 2; els.sub5.value = 0;
+        els.custShipFee.value = 4.5;
+        els.platformSubsidy.value = 0;
+        recalc();
+      });
+      els.resetAll.addEventListener('click', () => {
+        document.querySelectorAll('input[type=number]').forEach(i=> i.value = '');
+        document.querySelector('input[name=rounding][value=ceil]').checked = true;
+        recalc();
+      });
+    }
+
+    bind();
+    recalc(); // 初次计算
+  </script>
+</body>
+</html>
