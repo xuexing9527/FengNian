@@ -49,7 +49,7 @@
           </div>
           <div>
             <label>订单价格（用于配送服务费的“价格档”判断）</label>
-            <input id="priceForTier" type="number" step="0.01" min="0" value="28">
+            <input id="priceForTier" disabled type="number" step="0.01" min="0" value="28">
             <div class="help">仅用于 <b>配送服务费</b> 的价格阶梯：0~20 收费0；20~30 收费0.85；30+ 收费4.48。</div>
           </div>
         </div>
@@ -252,6 +252,15 @@
       resetAll: $('#resetAll')
     };
 
+    // 给关键数据配色
+    function getColor(num) {
+        const n = Number(num)
+        const danger = '#DC2626'
+        const normal = '#A3E635'
+        const good = '#16A34A'
+        return n < 20 ? danger : (n > 20 && n < 30) ? normal : n > 30 ? good : '#FFF'
+    }
+
     function recalc(){
       // 输入数值
       const commissionRate = num(els.commissionPct.value) / 100; // 佣金百分比转小数
@@ -275,18 +284,27 @@
       const commissionAmt = discounted * commissionRate;
       els.commissionAmt.textContent = fx(commissionAmt);
 
+      // 订单价格 = 商品优惠后金额
+      const orderPrice = discounted;
+      els.priceForTier.value = fx(orderPrice)
+      els.priceForTier.style.color = getColor(orderPrice)
+
       // 4) 配送服务费（系统计算）
-      const ship = calcDeliveryServiceFee(distanceKm, priceForTier, rounding);
+      // const ship = calcDeliveryServiceFee(distanceKm, priceForTier, rounding);
+      const ship = calcDeliveryServiceFee(distanceKm, orderPrice, rounding);
+      els.shipServiceFee.textContent = fx(ship.total);
       els.shipServiceFee.textContent = fx(ship.total);
       els.shipBreak.textContent = `距离收费 ${fx(ship.distanceFee)} + 价格收费 ${fx(ship.priceFee)} = 合计 ${fx(ship.total)}`;
 
       // 5) 商家最终结果（收入）= 优惠后金额 - 佣金 - 配送服务费
       const merchantNet = discounted - commissionAmt - ship.total;
       els.merchantNet.textContent = fx(merchantNet);
+      els.merchantNet.style.color = getColor(merchantNet)
 
       // 6) 顾客端实付 = 优惠后金额 + 顾客端配送费 - 平台活动补贴
       const customerPay = discounted + custShipFee - platformSubsidy;
       els.customerPay.textContent = fx(customerPay);
+      els.customerPay.style.color = getColor(customerPay)
     }
 
     function bind(){
