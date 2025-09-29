@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>❤️ 烟花爱心祝福</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  canvas {
+    display: block;
+  }
+  p {
+    position: absolute;
+    bottom: 30px;
+    font-size: 22px;
+    color: #ffdde1;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(255,100,150,0.7);
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<p>xx，祝你永远开心 💖</p>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let w, h;
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// 绘制爱心
+const cx = w / 2;
+const cy = h / 2 - 40;
+const scale = 10;
+
+function drawHeart(scaleFactor = 1) {
+  ctx.beginPath();
+  for (let i = 0; i <= 200; i++) {
+    const t = (i / 200) * Math.PI * 2;
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t)
+             - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    const px = cx + x * scale * scaleFactor;
+    const py = cy - y * scale * scaleFactor;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  const g = ctx.createLinearGradient(cx - 80, cy - 80, cx + 80, cy + 80);
+  g.addColorStop(0, "#ff5f6d");
+  g.addColorStop(1, "#ff2d95");
+  ctx.fillStyle = g;
+  ctx.fill();
+}
+
+// 烟花粒子系统
+class Firework {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * w;
+    this.y = h;
+    this.color = `hsl(${Math.random() * 360},100%,60%)`;
+    this.speed = Math.random() * 4 + 3;
+    this.angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+    this.life = Math.random() * 30 + 30;
+    this.trail = [];
+  }
+  update() {
+    this.trail.push([this.x, this.y]);
+    if (this.trail.length > 10) this.trail.shift();
+    this.x += Math.cos(this.angle) * this.speed;
+    this.y += Math.sin(this.angle) * this.speed;
+    this.life--;
+    if (this.life <= 0) this.explode();
+  }
+  explode() {
+    fireworks.push(...Array.from({length: 20}, () => new Particle(this.x, this.y, this.color)));
+    this.reset();
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    for (let p of this.trail) ctx.lineTo(p[0], p[1]);
+    ctx.strokeStyle = this.color;
+    ctx.stroke();
+  }
+}
+
+class Particle {
+  constructor(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    this.speed = Math.random() * 3 + 1;
+    this.angle = Math.random() * Math.PI * 2;
+    this.life = 50;
+    this.alpha = 1;
+  }
+  update() {
+    this.x += Math.cos(this.angle) * this.speed;
+    this.y += Math.sin(this.angle) * this.speed + 0.5;
+    this.life--;
+    this.alpha = this.life / 50;
+  }
+  draw() {
+    ctx.globalAlpha = this.alpha;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+const fireworks = Array.from({length: 5}, () => new Firework());
+
+// 动画循环
+let scaleFactor = 1, direction = 1;
+function animate() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+  ctx.fillRect(0, 0, w, h);
+
+  // 爱心跳动
+  scaleFactor += direction * 0.008;
+  if (scaleFactor > 1.05 || scaleFactor < 0.95) direction *= -1;
+  drawHeart(scaleFactor);
+
+  // 烟花
+  for (let f of fireworks) {
+    if (f instanceof Firework) {
+      f.update();
+      f.draw();
+    } else {
+      f.update();
+      f.draw();
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
