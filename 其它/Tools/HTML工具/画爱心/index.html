@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>❤️ 爱心祝福</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    canvas {
+      width: 320px;
+      height: 320px;
+    }
+    p {
+      margin-top: 10px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="heart" width="320" height="320"></canvas>
+  <p>xx，祝你永远开心</p>
+
+  <script>
+    const canvas = document.getElementById("heart");
+    const ctx = canvas.getContext("2d");
+
+    const cx = canvas.width / 2;
+    const cy = 140;
+    const scale = 7.5;
+
+    function drawHeart() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const t = (i / 200) * Math.PI * 2;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t)
+                 - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        const px = cx + x * scale;
+        const py = cy - y * scale;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+
+      // 渐变填充
+      const g = ctx.createLinearGradient(cx - 80, cy - 80, cx + 80, cy + 80);
+      g.addColorStop(0, "#ff5f6d");
+      g.addColorStop(1, "#ff2d95");
+      ctx.fillStyle = g;
+      ctx.fill();
+
+      // 高光
+      ctx.beginPath();
+      ctx.ellipse(cx - 30, cy - 30, 40, 24, -0.6, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.fill();
+    }
+
+    drawHeart();
+
+    // 呼吸动画效果
+    let scaleFactor = 1;
+    let direction = 1;
+    function animate() {
+      scaleFactor += direction * 0.005;
+      if (scaleFactor > 1.08 || scaleFactor < 0.92) direction *= -1;
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.translate(cx, cy);
+      ctx.scale(scaleFactor, scaleFactor);
+      ctx.translate(-cx, -cy);
+      drawHeart();
+      ctx.restore();
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>
