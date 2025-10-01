@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>恶作剧</title>
+<style>
+  html,body{
+    margin:0;
+    height:100%;
+    background:#000;
+    color:#fff;
+    font-family: "PingFang SC","Microsoft Yahei",sans-serif;
+    -webkit-user-select:none;
+    user-select:none;
+    overflow:hidden;
+  }
+  .wrap{
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    flex-direction:column;
+  }
+  .screen{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    padding:20px;
+    box-sizing:border-box;
+  }
+  .line {
+    font-size:28px;
+    letter-spacing:6px;
+    color:#fff;
+    margin-bottom:12px;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .count {
+    font-size:72px;
+    font-weight:700;
+    margin-top:18px;
+    color:#ff6b6b;
+    text-shadow: 0 6px 30px rgba(255,80,80,0.25);
+  }
+  .final {
+    font-size:34px;
+    color:#ffd1dc;
+    margin-top:20px;
+    text-shadow: 0 4px 14px rgba(255,200,220,0.12);
+  }
+  .btn {
+    position:absolute;
+    top:22px;
+    right:18px;
+    background: rgba(255,255,255,0.06);
+    color:#fff;
+    border:1px solid rgba(255,255,255,0.08);
+    padding:8px 12px;
+    border-radius:10px;
+    font-size:14px;
+    backdrop-filter: blur(4px);
+  }
+  .btn:active{ transform: translateY(1px); }
+  /* 小提示，让页面更“戏剧化” */
+  .cursor { display:inline-block; width:10px; height:28px; background:#fff; margin-left:6px; vertical-align:middle; opacity:0.9;}
+  @keyframes blink{ 0%{opacity:1}50%{opacity:0}100%{opacity:1} }
+  .cursor.blink{ animation: blink 1s steps(2) infinite; background:#fff; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <button class="btn" id="stopBtn">停止（我知道了）</button>
+    <div class="screen" id="screen">
+      <div class="line" id="line"></div>
+      <div class="count" id="count" style="display:none"></div>
+      <div class="final" id="final" style="display:none"></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const phrases = [
+    "你 被 攻 击 了",
+    "快 点 给 我 发 —— 你 想 我",
+    "不 然 10 s 后 手 机 会 爆 炸"
+  ];
+  // 真实呈现时更紧张的样式，把单词/字分开写以制造节奏
+  const target = document.getElementById('line');
+  const countEl = document.getElementById('count');
+  const finalEl = document.getElementById('final');
+  const stopBtn = document.getElementById('stopBtn');
+  let stopped = false;
+
+  stopBtn.addEventListener('click', ()=>{
+    stopped = true;
+    // 立即清除并显示结尾（更安全）
+    showFinal("其实是我想你了");
+  });
+
+  // 把每个 phrase 一个字一个字打出
+  function typePhrases(idx=0){
+    if(stopped) return;
+    if(idx >= phrases.length){
+      startCountdown(10);
+      return;
+    }
+    const text = phrases[idx];
+    // 清空当前行，再逐字输出（保留空格）
+    target.textContent = "";
+    const chars = Array.from(text);
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor blink';
+    target.appendChild(cursor);
+
+    const tick = setInterval(()=>{
+      if(stopped){
+        clearInterval(tick);
+        return;
+      }
+      if(i < chars.length){
+        // 在 cursor 前插入字符（保持 cursor 在末尾）
+        cursor.insertAdjacentText('beforebegin', chars[i]);
+        i++;
+      } else {
+        clearInterval(tick);
+        // 暂停一会儿再显示下一句
+        setTimeout(()=> typePhrases(idx+1), 700);
+      }
+    }, 120); // 每个字符的速度，120ms 可调
+  }
+
+  function startCountdown(seconds){
+    if(stopped) return;
+    // 隐藏 line，显示倒计时
+    target.style.display = 'none';
+    countEl.style.display = 'block';
+    let t = seconds;
+    countEl.textContent = t;
+    const interval = setInterval(()=>{
+      if(stopped){
+        clearInterval(interval);
+        return;
+      }
+      t--;
+      if(t >= 0){
+        countEl.textContent = t;
+        // 让数字在 3 秒内闪烁并放大
+        countEl.style.transform = 'scale(1.06)';
+        setTimeout(()=> countEl.style.transform = '', 120);
+      }
+      if(t < 0){
+        clearInterval(interval);
+        // 倒计时结束，显示反转结尾
+        showFinal("其实是我想你了");
+      }
+    }, 1000);
+  }
+
+  function showFinal(text){
+    // 清屏并显示温柔结尾
+    document.body.style.background = '#000';
+    countEl.style.display = 'none';
+    target.style.display = 'none';
+    finalEl.style.display = 'block';
+    finalEl.textContent = text;
+    // 轻微动画效果
+    finalEl.style.opacity = '0';
+    finalEl.style.transform = 'translateY(8px)';
+    finalEl.style.transition = 'opacity 600ms ease, transform 600ms ease';
+    requestAnimationFrame(()=> {
+      finalEl.style.opacity = '1';
+      finalEl.style.transform = 'translateY(0)';
+    });
+  }
+
+  // 禁用触摸滚动、长按复制等（能增强戏剧性，但不必）
+  window.addEventListener('touchmove', (e)=>{ e.preventDefault(); }, {passive:false});
+
+  // 启动
+  typePhrases(0);
+
+  // 可选：按任意键或触摸屏幕可立即跳到倒计时（模拟被迫回应）
+  document.addEventListener('keydown', ()=> { if(!stopped) startCountdown(10); }, {once:true});
+  document.addEventListener('touchstart', ()=> { if(!stopped) startCountdown(10); }, {once:true});
+
+})();
+</script>
+</body>
+</html>
