@@ -22,3 +22,5 @@ state 和 DOM 对应关系
 原本可以自由更新的 DOM，会在组件化的过程正，变成 state 驱动。 
 - 含 state 的组件
 - 不含 state 的 pure 组件，相当于纯 DOM，无需监听 state
+
+## Pure 组件
