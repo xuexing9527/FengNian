@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>语音停顿自动断句</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  button { padding: 10px 20px; margin-right: 10px; }
+  #output { width: 100%; height: 200px; margin-top: 20px; font-size: 18px; }
+</style>
+</head>
+<body>
+
+<h2>语音停顿自动断句（单机版）</h2>
+
+<button id="start">开始录音</button>
+<button id="stop">停止</button>
+<button id="copy">复制全部文本</button>
+
+<textarea id="output" readonly placeholder="识别结果会出现在这里..."></textarea>
+
+<script>
+  const startBtn = document.getElementById('start');
+  const stopBtn = document.getElementById('stop');
+  const copyBtn = document.getElementById('copy');
+  const output = document.getElementById('output');
+
+  let recognition;
+  let lastTimestamp = Date.now();
+  let textBuffer = "";
+
+  // 自动复制到剪切板
+  function autoCopy() {
+    navigator.clipboard.writeText(textBuffer).catch(() => {});
+  }
+
+  function initRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("你的浏览器不支持 Web Speech API，请换 Chrome");
+      return null;
+    }
+
+    const rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = "zh-CN";
+
+    rec.onresult = (event) => {
+      const now = Date.now();
+      const diff = now - lastTimestamp;
+
+      const result = event.results[event.results.length - 1];
+      const text = result[0].transcript;
+
+      // 停顿逻辑
+      if (diff > 1000) {
+        // >1秒 换行
+        textBuffer += "\n";
+      } else if (diff > 400) {
+        // 0.4~1秒 空格
+        textBuffer += " ";
+      }
+
+      textBuffer += text;
+
+      output.value = textBuffer;
+      lastTimestamp = now;
+
+      // 自动复制
+      autoCopy();
+    };
+
+    rec.onerror = (err) => {
+      console.log("Speech error:", err);
+    };
+
+    return rec;
+  }
+
+  startBtn.onclick = () => {
+    recognition = initRecognition();
+    if (recognition) recognition.start();
+  };
+
+  stopBtn.onclick = () => {
+    if (recognition) recognition.stop();
+  };
+
+  // 手动复制按钮
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(textBuffer).then(() => {
+      alert("已复制到剪切板");
+    });
+  };
+</script>
+
+</body>
+</html>

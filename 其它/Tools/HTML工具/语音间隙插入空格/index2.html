@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<title>语音停顿自动断句（修复重复）</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans CJK SC", "PingFang SC", "Hiragino Sans", "Microsoft YaHei", Arial; padding: 20px; }
+  button { padding: 10px 14px; margin-right: 8px; }
+  #output { width: 100%; height: 240px; margin-top: 14px; font-size: 16px; line-height: 1.6; }
+  #preview { width: 100%; height: 60px; margin-top: 8px; font-size: 14px; color: #555; }
+</style>
+</head>
+<body>
+  <h2>语音停顿自动断句（本地单文件）</h2>
+  <div>
+    <button id="start">开始录音</button>
+    <button id="stop">停止</button>
+    <button id="copy">手动复制全部文本</button>
+  </div>
+
+  <textarea id="output" readonly placeholder="最终识别（只包含 final 结果，会自动复制）..."></textarea>
+  <div id="preview" aria-live="polite">实时候选（interim）会显示在这里，但不会写入最终文本。</div>
+
+<script>
+(function () {
+  const startBtn = document.getElementById('start');
+  const stopBtn = document.getElementById('stop');
+  const copyBtn = document.getElementById('copy');
+  const outputEl = document.getElementById('output');
+  const previewEl = document.getElementById('preview');
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('浏览器不支持 Web Speech API（SpeechRecognition）。建议使用 Chrome/Edge。');
+    startBtn.disabled = stopBtn.disabled = copyBtn.disabled = true;
+    return;
+  }
+
+  let recognition = null;
+  let isRecognizing = false;
+  let finalText = "";         // 最终缓存（只写 final）
+  let lastFinalTimestamp = Date.now();
+
+  function autoCopyFinal() {
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(finalText).catch(() => {
+      // ignore clipboard errors silently
+    });
+  }
+
+  function initRecognition() {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'zh-CN';
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      // event.results 是一个实时累积的结果集合
+      // 取最后一个结果块
+      const lastIndex = event.results.length - 1;
+      const lastResult = event.results[lastIndex];
+      const transcript = lastResult[0].transcript.trim();
+
+      // 显示 interim 预览（如果不是 final 就显示）
+      if (!lastResult.isFinal) {
+        previewEl.textContent = transcript;
+        return;
+      }
+
+      // ---- 只有 final 走到这里 ----
+      previewEl.textContent = ''; // 清空预览
+
+      const now = Date.now();
+      const silence = now - lastFinalTimestamp;
+
+      // 根据停顿时长插入分隔
+      if (silence > 1000) {
+        finalText += '\n';
+      } else if (silence > 400) {
+        finalText += ' ';
+      }
+
+      // 添加最终文本（避免重复：我们只在 final 时添加一次）
+      finalText += transcript;
+      lastFinalTimestamp = now;
+
+      // 更新页面并自动复制
+      outputEl.value = finalText;
+      autoCopyFinal();
+    };
+
+    recognition.onerror = (e) => {
+      console.warn('SpeechRecognition error', e);
+      // 常见错误：no-speech / network / not-allowed
+    };
+
+    recognition.onend = () => {
+      // recognition 可能在用户停止或网络断时触发 end
+      isRecognizing = false;
+      startBtn.disabled = false;
+    };
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (isRecognizing) return;
+    if (!recognition) initRecognition();
+    try {
+      recognition.start();
+      isRecognizing = true;
+      startBtn.disabled = true;
+      lastFinalTimestamp = Date.now();
+    } catch (err) {
+      console.error('start error', err);
+    }
+  });
+
+  stopBtn.addEventListener('click', () => {
+    if (!recognition || !isRecognizing) return;
+    recognition.stop();
+    isRecognizing = false;
+    startBtn.disabled = false;
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(finalText);
+      alert('已复制到剪切板');
+    } catch (err) {
+      alert('复制失败（浏览器权限或不支持）。请手动复制文本。');
+    }
+  });
+
+  // 页面卸载时确保停止识别
+  window.addEventListener('beforeunload', () => {
+    if (recognition && isRecognizing) {
+      try { recognition.stop(); } catch (_) {}
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

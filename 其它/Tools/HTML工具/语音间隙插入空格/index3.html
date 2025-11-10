@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>语音实时逐字插空格（带草稿区）</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  button { padding: 10px 16px; margin-right: 8px; }
+  textarea { width: 100%; margin-top: 12px; font-size: 16px; line-height: 1.6; }
+  #finalArea { height: 200px; }
+  #draftArea { height: 120px; color: #666; }
+</style>
+</head>
+
+<body>
+
+<h2>语音实时逐字插空格（无重复，带草稿区）</h2>
+<button id="startBtn">开始</button>
+<button id="stopBtn">停止</button>
+<button id="copyBtn">复制正式区</button>
+
+<h3>正式区（逐字分隔）</h3>
+<textarea id="finalArea" readonly></textarea>
+
+<h3>草稿区（原始实时识别，不处理重复）</h3>
+<textarea id="draftArea" readonly placeholder="实时识别过程（interim）展示在这里"></textarea>
+
+<script>
+(function() {
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("浏览器不支持 SpeechRecognition，请用 Chrome");
+    return;
+  }
+
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const finalArea = document.getElementById("finalArea");
+  const draftArea = document.getElementById("draftArea");
+
+  let recognition = null;
+  let isRunning = false;
+
+  let lastFull = "";   // 上次完整文本
+  let finalText = "";  // 输出区文本
+
+  function autoCopy() {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(finalText).catch(()=>{});
+    }
+  }
+
+  function init() {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "zh-CN";
+
+    recognition.onresult = (e) => {
+      // 组合所有识别文本（包括 interim）
+      let full = "";
+      for (let i = 0; i < e.results.length; i++) {
+        full += e.results[i][0].transcript;
+      }
+
+      // 草稿区实时显示（可重复）
+      draftArea.value = full;
+
+      // 清理空白
+      full = full.replace(/\s+/g, "");
+
+      // 找增量
+      if (full.length > lastFull.length) {
+        const delta = full.slice(lastFull.length);
+
+        // 逐字插空格
+        const spaced = delta.split("").join(" ");
+
+        finalText += spaced;
+        finalArea.value = finalText;
+
+        autoCopy();
+      }
+
+      lastFull = full;
+    };
+
+    recognition.onerror = (e) => {
+      console.error("SpeechRecognition error:", e);
+    };
+
+    recognition.onend = () => {
+      isRunning = false;
+      startBtn.disabled = false;
+    };
+  }
+
+  startBtn.onclick = () => {
+    if (isRunning) return;
+    init();
+    recognition.start();
+    isRunning = true;
+    startBtn.disabled = true;
+    lastFull = "";
+  };
+
+  stopBtn.onclick = () => {
+    if (!isRunning) return;
+    isRunning = false;
+    try { recognition.stop(); } catch (_) {}
+    startBtn.disabled = false;
+  };
+
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(finalText)
+      .then(()=> alert("已复制"))
+      .catch(()=> alert("复制失败"));
+  };
+
+})();
+</script>
+</body>
+</html>
