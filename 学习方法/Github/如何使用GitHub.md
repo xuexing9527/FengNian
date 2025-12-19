@@ -9,7 +9,7 @@ GitHub 不简单是“代码仓库网站”，是：
 Star 不多 + 增长快
 ## 趋势
 ### GitHub Trending
-链接：ttps://github.com/trending
+链接：https://github.com/trending
 
 参考截图：
 
@@ -40,3 +40,4 @@ Star 不多 + 增长快
 这就是 造轮子的方向提示
 
 ## 找项目
+
